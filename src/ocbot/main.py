@@ -10,7 +10,14 @@ log = logging.getLogger(__name__)
 
 
 def main() -> None:
-    settings = Settings.from_env()
+    try:
+        settings = Settings.from_env()
+    except Exception as exc:  # noqa: BLE001
+        raise SystemExit(
+            "Не удалось прочитать настройки. Проверь "
+            "/home/user/.config/opencode/telegram-bot.env: "
+            f"{exc}"
+        ) from exc
     configure_logging(settings)
     lock_path = settings.db_path.parent / "bot.lock"
     lock = acquire_lock(lock_path)

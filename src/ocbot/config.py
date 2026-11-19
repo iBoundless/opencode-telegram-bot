@@ -5,7 +5,7 @@ import os
 import shutil
 from pathlib import Path
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 DEFAULT_SERVICE_JSON = Path.home() / ".config" / "opencode" / "service.json"
 DEFAULT_DB_PATH = Path.home() / ".local" / "share" / "opencode-telegram-bot" / "bot.db"
@@ -31,7 +31,7 @@ def opencode_credentials() -> tuple[str, str]:
 
 
 class Settings(BaseModel):
-    telegram_bot_token: str
+    telegram_bot_token: str = Field(min_length=1)
     allowed_user_ids: list[int] = []
     opencode_url: str = "http://127.0.0.1:49374"
     opencode_password: str = ""

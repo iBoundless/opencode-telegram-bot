@@ -62,3 +62,10 @@ def test_settings_defaults(monkeypatch):
     assert s.progress_edit_seconds == 2.0
     assert s.allowed_user_ids == []
     assert isinstance(s.db_path, Path)
+
+
+def test_settings_rejects_empty_token(monkeypatch):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "")
+    with pytest.raises(ValidationError):
+        Settings.from_env()

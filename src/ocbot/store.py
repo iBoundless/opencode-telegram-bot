@@ -240,6 +240,20 @@ class Store:
         )
         await self._connection.commit()
 
+    async def remove_session(self, session_id: str) -> None:
+        """Drop every reference to a deleted session."""
+        await self._connection.execute(
+            "DELETE FROM subscriptions WHERE session_id = ?", (session_id,)
+        )
+        await self._connection.execute(
+            "DELETE FROM progress WHERE session_id = ?", (session_id,)
+        )
+        await self._connection.execute(
+            "UPDATE chats SET active_session = NULL WHERE active_session = ?",
+            (session_id,),
+        )
+        await self._connection.commit()
+
     async def meta_get(self, key: str) -> str | None:
         cursor = await self._connection.execute(
             "SELECT value FROM meta WHERE key = ?", (key,)

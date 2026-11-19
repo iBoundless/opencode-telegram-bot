@@ -90,3 +90,20 @@ async def test_meta_roundtrip(store):
     assert await store.meta_get("k") == "v"
     await store.meta_set("k", "v2")
     assert await store.meta_get("k") == "v2"
+
+
+async def test_remove_session_cleans_references(store):
+    await store.subscribe(1, "ses_1")
+    await store.subscribe(2, "ses_1")
+    await store.subscribe(2, "ses_2")
+    await store.set_active_session(1, "ses_1")
+    await store.set_active_session(2, "ses_2")
+    await store.set_progress_message("ses_1", 1, 10)
+
+    await store.remove_session("ses_1")
+
+    assert await store.subscribers("ses_1") == []
+    assert await store.subscribers("ses_2") == [2]
+    assert (await store.get_chat(1)).active_session is None
+    assert (await store.get_chat(2)).active_session == "ses_2"
+    assert await store.pop_progress_messages("ses_1") == []

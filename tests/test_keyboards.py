@@ -5,6 +5,7 @@ from ocbot.keyboards import (
     completion_kb,
     main_menu,
     models_list,
+    models_choices,
     models_providers,
     new_task_models,
     new_task_models_providers,
@@ -51,6 +52,7 @@ def test_all_callbacks_under_64_bytes():
         restart_confirm(),
         completion_kb(SESSION_ID),
         new_task_models_providers([PROVIDER]),
+        models_choices([(PROVIDER, MODEL)]),
         new_task_models([(PROVIDER, MODEL)]),
     ]
     for markup in markups:
@@ -99,3 +101,9 @@ def test_new_task_models_use_index_callbacks():
     callbacks = _callbacks(new_task_models([(PROVIDER, MODEL)]))
     assert "tmodel:0" in callbacks
     assert "tmodel:default" in callbacks
+
+
+def test_models_choices_use_index_callbacks():
+    callbacks = _callbacks(models_choices([(PROVIDER, MODEL)]))
+    assert "mdl:set:0" in callbacks
+    assert "mprov:" in callbacks

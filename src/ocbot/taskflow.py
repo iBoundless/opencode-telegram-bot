@@ -18,6 +18,16 @@ class PromptAttempt:
     title: str | None = None
 
 
+def parse_default_model(value: str | None) -> ModelRef | None:
+    """Decode the "provider|model" value from the meta table."""
+    if not value or "|" not in value:
+        return None
+    provider, _, model_id = value.partition("|")
+    if not provider or not model_id:
+        return None
+    return ModelRef(id=model_id, provider_id=provider)
+
+
 def delivery_choice(choice: str) -> Delivery:
     if choice not in ("queue", "steer"):
         raise ValueError(f"unknown delivery choice: {choice}")

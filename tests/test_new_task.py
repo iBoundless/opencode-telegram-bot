@@ -10,7 +10,12 @@ from ocbot.opencode import SessionNotFound
 from ocbot.opencode.models import ModelRef, SessionInfo, SessionTime
 from ocbot.permissions_profile import BOT_SESSION_PERMISSIONS, evaluate
 from ocbot.store import Store
-from ocbot.taskflow import attempt_prompt, create_bot_session, delivery_choice
+from ocbot.taskflow import (
+    attempt_prompt,
+    create_bot_session,
+    delivery_choice,
+    parse_default_model,
+)
 
 
 class FakeClient:
@@ -188,3 +193,13 @@ async def test_cancel_clears_pending_text():
     assert await take_pending(state) == ("ses_1", "черновик")
     assert await take_pending(state) is None
     assert await state.get_data() == {}
+
+
+def test_parse_default_model():
+    model = parse_default_model("p1|m1")
+    assert model is not None
+    assert model.provider_id == "p1"
+    assert model.id == "m1"
+    assert parse_default_model(None) is None
+    assert parse_default_model("") is None
+    assert parse_default_model("broken") is None

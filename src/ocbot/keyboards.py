@@ -147,6 +147,18 @@ def new_task_models(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def models_choices(
+    models: Iterable[tuple[str, str]], current: tuple[str, str] | None = None
+) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    for index, pair in enumerate(models):
+        label = f"✅ {pair[1]}" if current == pair else pair[1]
+        rows.append([_button(label, f"mdl:set:{index}")])
+    rows.append([_button("‹ Провайдеры", "mprov:")])
+    rows.append([_button("🏠 Меню", "menu:main")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 def restart_confirm() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[

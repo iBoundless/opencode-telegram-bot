@@ -1,0 +1,31 @@
+from __future__ import annotations
+
+import asyncio
+import logging
+
+from .app import acquire_lock, build_app, configure_logging
+from .config import Settings
+
+log = logging.getLogger(__name__)
+
+
+def main() -> None:
+    settings = Settings.from_env()
+    configure_logging(settings)
+    lock_path = settings.db_path.parent / "bot.lock"
+    lock = acquire_lock(lock_path)
+    if lock is None:
+        log.error("another bot instance is already running, exiting")
+        raise SystemExit(1)
+
+    app = build_app(settings)
+    try:
+        asyncio.run(app.run())
+    except KeyboardInterrupt:
+        log.info("stopped by user")
+    finally:
+        lock.close()
+
+
+if __name__ == "__main__":
+    main()

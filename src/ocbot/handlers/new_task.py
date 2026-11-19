@@ -12,7 +12,7 @@ from ..context import BotContext
 from ..keyboards import back_to_menu
 from ..opencode import OpencodeUnavailable
 from ..opencode.models import ModelRef
-from ..taskflow import create_bot_session
+from ..taskflow import create_bot_session, parse_default_model
 from ..ui import new_task as view
 from ..ui.common import safe_edit
 
@@ -146,7 +146,11 @@ async def pick_model(callback: CallbackQuery, ctx: BotContext, state: FSMContext
     raw = (callback.data or "").split(":", 1)[1]
     data = await state.get_data()
     if raw == "default":
-        await state.update_data(model_provider=None, model_id=None)
+        stored = parse_default_model(await ctx.store.meta_get("default_model"))
+        await state.update_data(
+            model_provider=stored.provider_id if stored else None,
+            model_id=stored.id if stored else None,
+        )
     else:
         index = int(raw)
         filtered = [tuple(pair) for pair in data.get("model_filter") or []]

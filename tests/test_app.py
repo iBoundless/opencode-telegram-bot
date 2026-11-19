@@ -1,0 +1,154 @@
+from __future__ import annotations
+
+import logging
+from types import SimpleNamespace
+
+from ocbot.app import (
+    AllowlistMiddleware,
+    App,
+    SecretRedactionFilter,
+    acquire_lock,
+)
+from ocbot.config import Settings
+from ocbot.opencode.models import PermissionRequest, SessionInfo
+from ocbot.permissions import PermissionRouter
+from ocbot.store import Store
+
+
+def _settings() -> Settings:
+    return Settings(telegram_bot_token="123:secret-token", allowed_user_ids=[11])
+
+
+def _event(user_id: int | None):
+    user = SimpleNamespace(id=user_id) if user_id is not None else None
+    return SimpleNamespace(from_user=user)
+
+
+async def test_allowlist_ignores_stranger(caplog):
+    middleware = AllowlistMiddleware({11})
+    calls: list[object] = []
+
+    async def handler(event, data):
+        calls.append(event)
+        return "handled"
+
+    with caplog.at_level(logging.WARNING, logger="ocbot.app"):
+        result = await middleware(handler, _event(99), {})
+
+    assert result is None
+    assert calls == []
+    assert "99" in caplog.text
+
+
+async def test_allowlist_allows_owner():
+    middleware = AllowlistMiddleware({11})
+    calls: list[object] = []
+
+    async def handler(event, data):
+        calls.append(event)
+        return "handled"
+
+    result = await middleware(handler, _event(11), {})
+    assert result == "handled"
+    assert len(calls) == 1
+
+
+def test_second_instance_exits(tmp_path):
+    lock_path = tmp_path / "bot.lock"
+    first = acquire_lock(lock_path)
+    assert first is not None
+    try:
+        assert acquire_lock(lock_path) is None
+    finally:
+        first.close()
+
+
+def test_log_redacts_token_and_password():
+    record = logging.LogRecord(
+        "ocbot.test",
+        logging.INFO,
+        __file__,
+        1,
+        "token=%s password=%s",
+        ("123:secret-token", "hunter2"),
+        None,
+    )
+    filter_ = SecretRedactionFilter(["123:secret-token", "hunter2"])
+    filter_.filter(record)
+    text = record.getMessage()
+    assert "123:secret-token" not in text
+    assert "hunter2" not in text
+    assert text.count("***") == 2
+
+
+class FakeBot:
+    def __init__(self) -> None:
+        self.sent: list[tuple[int, str, object]] = []
+        self._next = 1
+
+    async def send_message(self, chat_id, text, reply_markup=None):
+        self.sent.append((chat_id, text, reply_markup))
+        message = SimpleNamespace(message_id=self._next)
+        self._next += 1
+        return message
+
+
+class FakeClient:
+    def __init__(self) -> None:
+        self.requests = [
+            PermissionRequest.model_validate(
+                {
+                    "id": "per_1",
+                    "sessionID": "ses_1",
+                    "action": "shell",
+                    "resources": ["echo hi"],
+                }
+            )
+        ]
+
+    async def list_permissions(self):
+        return list(self.requests)
+
+    async def get_session(self, session_id):
+        return SessionInfo.model_validate(
+            {"id": session_id, "title": "Задача", "time": {"created": 0, "updated": 0}}
+        )
+
+
+class FakeService:
+    def __init__(self) -> None:
+        self.ensured = False
+
+    async def ensure_running(self):
+        self.ensured = True
+        return True
+
+
+async def test_startup_resurfaces_pending_permissions(tmp_path):
+    store = Store(tmp_path / "bot.db")
+    await store.init()
+    bot = FakeBot()
+    client = FakeClient()
+    settings = _settings()
+    permissions = PermissionRouter(client, store, bot, settings)
+    service = FakeService()
+    app = App(
+        settings=settings,
+        bot=bot,
+        dispatcher=None,
+        client=client,
+        store=store,
+        permissions=permissions,
+        progress=None,
+        notifier=None,
+        service=service,
+    )
+    try:
+        await app.startup_checks()
+        await app.startup_checks()
+    finally:
+        await store.close()
+
+    assert service.ensured is True
+    assert len(bot.sent) == 1
+    assert "shell" in bot.sent[0][1]

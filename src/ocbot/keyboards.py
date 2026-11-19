@@ -156,5 +156,11 @@ def restart_confirm() -> InlineKeyboardMarkup:
     )
 
 
+def completion_kb(session_id: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[_button("Открыть сессию", f"sopen:{session_id}")]]
+    )
+
+
 def back_to_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[_button("🏠 Меню", "menu:main")]])

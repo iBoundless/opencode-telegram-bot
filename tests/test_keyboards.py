@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ocbot.keyboards import (
     busy_kb,
+    completion_kb,
     main_menu,
     models_list,
     models_providers,
@@ -48,6 +49,7 @@ def test_all_callbacks_under_64_bytes():
         permission_kb("per_1f4e187f80019mRjDEzIw6srDp"),
         busy_kb(SESSION_ID),
         restart_confirm(),
+        completion_kb(SESSION_ID),
         new_task_models_providers([PROVIDER]),
         new_task_models([(PROVIDER, MODEL)]),
     ]

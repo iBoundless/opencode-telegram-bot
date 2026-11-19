@@ -87,9 +87,11 @@ async def resolve_busy(callback: CallbackQuery, ctx: BotContext, state: FSMConte
     try:
         await deliver(ctx.client, session_id, text, choice)
     except OpencodeUnavailable:
+        await save_pending(state, session_id, text)
         await callback.answer("Сервер OpenCode недоступен", show_alert=True)
         return
     except ValueError:
+        await save_pending(state, session_id, text)
         await callback.answer("Неизвестный вариант", show_alert=True)
         return
 

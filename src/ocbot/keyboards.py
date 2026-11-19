@@ -128,6 +128,25 @@ def new_task_projects(projects: Iterable[str], page: int = 0, per_page: int = 8)
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def new_task_models_providers(providers: Iterable[str]) -> InlineKeyboardMarkup:
+    rows = [[_button(provider, f"tmprov:{provider}")] for provider in sorted(providers)]
+    rows.append([_button("По умолчанию", "tmodel:default")])
+    rows.append([_button("🏠 Меню", "menu:main")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def new_task_models(
+    models: Iterable[tuple[str, str]], current: tuple[str, str] | None = None
+) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    for index, (provider, model) in enumerate(sorted(models)):
+        label = f"✅ {model}" if current == (provider, model) else model
+        rows.append([_button(label, f"tmodel:{index}")])
+    rows.append([_button("По умолчанию", "tmodel:default")])
+    rows.append([_button("🏠 Меню", "menu:main")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 def restart_confirm() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[

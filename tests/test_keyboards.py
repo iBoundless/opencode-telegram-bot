@@ -5,6 +5,8 @@ from ocbot.keyboards import (
     main_menu,
     models_list,
     models_providers,
+    new_task_models,
+    new_task_models_providers,
     permission_kb,
     restart_confirm,
     session_card,
@@ -46,6 +48,8 @@ def test_all_callbacks_under_64_bytes():
         permission_kb("per_1f4e187f80019mRjDEzIw6srDp"),
         busy_kb(SESSION_ID),
         restart_confirm(),
+        new_task_models_providers([PROVIDER]),
+        new_task_models([(PROVIDER, MODEL)]),
     ]
     for markup in markups:
         for data in _callbacks(markup):
@@ -87,3 +91,9 @@ def test_sessions_page_has_navigation():
     assert "sp:0" in callbacks
     assert "sp:2" in callbacks
     assert "menu:main" in callbacks
+
+
+def test_new_task_models_use_index_callbacks():
+    callbacks = _callbacks(new_task_models([(PROVIDER, MODEL)]))
+    assert "tmodel:0" in callbacks
+    assert "tmodel:default" in callbacks

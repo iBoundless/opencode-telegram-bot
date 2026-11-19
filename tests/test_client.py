@@ -75,7 +75,7 @@ async def test_list_sessions_with_search(client):
 @respx.mock
 async def test_create_session_payload(client):
     route = respx.post(f"{BASE}/api/session").mock(
-        return_value=httpx.Response(200, json={"id": "ses_new", "title": ""})
+        return_value=httpx.Response(200, json={"data": {"id": "ses_new", "title": ""}})
     )
     rules = [Rule(action="*", resource="*", effect="allow")]
     session = await client.create_session(
@@ -86,6 +86,15 @@ async def test_create_session_payload(client):
     assert body["location"] == {"directory": "/home/user/projects/x"}
     assert body["model"] == {"id": "m1", "providerID": "p1", "variant": "default"}
     assert body["permissions"] == [{"action": "*", "resource": "*", "effect": "allow"}]
+
+
+@respx.mock
+async def test_get_session_unwraps_data(client):
+    respx.get(f"{BASE}/api/session/ses_1").mock(
+        return_value=httpx.Response(200, json={"data": {"id": "ses_1", "title": "T"}})
+    )
+    session = await client.get_session("ses_1")
+    assert session.id == "ses_1"
 
 
 @respx.mock

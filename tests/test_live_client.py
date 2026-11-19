@@ -35,3 +35,14 @@ async def test_live_projects_models_sessions(live_client):
     assert await live_client.list_models()
     await live_client.list_sessions()
     await live_client.list_permissions()
+
+
+async def test_live_event_stream_yields_connected(live_client):
+    import asyncio
+
+    async def first_event():
+        async for event in live_client.events():
+            return event
+
+    event = await asyncio.wait_for(first_event(), timeout=15)
+    assert event.type

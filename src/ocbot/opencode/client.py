@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
 from typing import Any, Literal
 
 import httpx
+
+from .events import Event, EventStream
 
 from .models import (
     AgentInfo,
@@ -40,9 +43,17 @@ class ApiError(OpencodeError):
         self.message = message
 
 
+def _unwrap(payload: Any) -> Any:
+    """Some endpoints wrap the object in {"data": ...}."""
+    if isinstance(payload, dict) and set(payload) == {"data"}:
+        return payload["data"]
+    return payload
+
+
 class OpencodeClient:
     def __init__(self, base_url: str, password: str, timeout: float = 30.0) -> None:
         self._base_url = base_url.rstrip("/")
+        self._password = password
         self._client = httpx.AsyncClient(
             base_url=self._base_url,
             auth=httpx.BasicAuth("opencode", password),
@@ -95,7 +106,7 @@ class OpencodeClient:
 
     async def get_session(self, session_id: str) -> SessionInfo:
         payload = await self._request("GET", f"/api/session/{session_id}")
-        return SessionInfo.model_validate(payload)
+        return SessionInfo.model_validate(_unwrap(payload))
 
     async def create_session(
         self,
@@ -119,7 +130,7 @@ class OpencodeClient:
         if title is not None:
             body["title"] = title
         payload = await self._request("POST", "/api/session", json=body)
-        return SessionInfo.model_validate(payload)
+        return SessionInfo.model_validate(_unwrap(payload))
 
     async def prompt(
         self, session_id: str, text: str, delivery: Delivery = "queue"
@@ -210,3 +221,20 @@ class OpencodeClient:
 
     async def reload_config(self) -> None:
         await self._request("POST", "/api/location/reload", json={})
+
+    async def event_lines(self) -> AsyncIterator[str]:
+        async with httpx.AsyncClient(
+            base_url=self._base_url,
+            auth=httpx.BasicAuth("opencode", self._password),
+            timeout=None,
+        ) as raw:
+            async with raw.stream(
+                "GET", "/api/event", headers={"Accept": "text/event-stream"}
+            ) as response:
+                if response.status_code >= 400:
+                    raise ApiError(response.status_code, "event stream rejected")
+                async for line in response.aiter_lines():
+                    yield line
+
+    def events(self) -> AsyncIterator[Event]:
+        return EventStream(self.event_lines).events()

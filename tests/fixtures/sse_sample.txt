@@ -1,0 +1,113 @@
+data: {"id":"evt_1f4ffb0f2001Fk2E6jriGnbz2d","type":"server.connected","data":{}}
+
+: heartbeat
+
+data: {"id":"evt_1f4ffb21b0019mUcfUwE1kiU2Q","created":1795111760411,"type":"mcp.resources.changed","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"server":"1C-Debug"}}
+
+data: {"id":"evt_1f4ffb21d0018Pwg97q9E7CwXm","created":1795111760413,"type":"mcp.status.changed","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"server":"1C-Debug"}}
+
+data: {"id":"evt_1f4ffb3aa001xOpp7QNmfOJHWz","created":1795111760810,"type":"mcp.resources.changed","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"server":"1C-DAP"}}
+
+data: {"id":"evt_1f4ffb3ab0012m9PTxm3eTBkf0","created":1795111760811,"type":"mcp.status.changed","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"server":"1C-DAP"}}
+
+data: {"id":"evt_1f4ffb68e0011qqI3eirKdr4RO","created":1795111761550,"metadata":{"instructions":{"initial":true}},"type":"session.instructions.updated","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","delta":{"core/codemode":"cd2f3db8a2fdc3e49bc3cd3bc97fe3716850aa32c72cc0c7fc66e1feadc300e2","core/mcp-guidance":"56a81efb1e072d02d116258c850c2f569d7071adb5613124983c59681ef40e12","core/skill-guidance":"40b6afb3158a022a7b1fc08826731cb48406b9dce17532afd17a28acd5158141","core/instructions":"a98b059e4d8da77fc10206a06f8dc4e618274ea64fbd8602749b6cf866348b27","core/date":"b34a1960438d06e3172a170a42533a0a13e353ac8af8acf5dcc42fe557af6eea","core/environment":"ab0fa208928fa2f99dc5a52d3d36db3ff41d60f53eb622e34c243607e564d58a"}},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":3,"version":2}}
+
+data: {"id":"evt_1f4ffb692001Go5130idNNfyA4","created":1795111761554,"type":"session.inbox.delivered","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","inboxID":"msg_1f4ffaca40018X3SUFmUr7RCLU"},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":4,"version":1}}
+
+data: {"id":"evt_1f4ffba6d0029dP417kd73VYth","created":1795111762541,"type":"mcp.resources.changed","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"server":"agentmemory"}}
+
+data: {"id":"evt_1f4ffba6e002vHAaCMASBa7lgm","created":1795111762542,"type":"mcp.status.changed","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"server":"agentmemory"}}
+
+data: {"id":"evt_1f4ffc179001jD7V0Q9cEevcy8","created":1795111764345,"type":"session.step.started","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","agent":"build","model":{"id":"tidepool-alpha-free","providerID":"opencode"},"assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","started":1795111761577},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":5,"version":1}}
+
+data: {"id":"evt_1f4ffc17c0011XWs73rlhRCu07","created":1795111764348,"type":"session.step.first-token","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH"},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":6,"version":1}}
+
+data: {"id":"evt_1f4ffc17f001CFkImWwm2xVEuT","created":1795111764351,"type":"session.reasoning.started","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"native":{"reasoningField":"reasoning_content"}},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":7,"version":1}}
+
+data: {"id":"evt_1f4ffc1e5001G9ORMUyBWiCLoa","created":1795111764453,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":"The user asks: \"Ответь"}}
+
+data: {"id":"evt_1f4ffc256001Vc0c4C58w91olu","created":1795111764567,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" одним словом: ок"}}
+
+data: {"id":"evt_1f4ffc2c0001wYg8K4xKtZ3sai","created":1795111764672,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":"\" - \"Answer with one word: ok\". This"}}
+
+data: {"id":"evt_1f4ffc327001fwjQPbgUYEVEP8","created":1795111764775,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" is a trivial request. Per the using-superpowers skill rules,"}}
+
+data: {"id":"evt_1f4ffc391001EusmoorMW31bRy","created":1795111764881,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" I should check for applicable skills. This is a simple conversational reply, no"}}
+
+data: {"id":"evt_1f4ffc3f7001oqGSb6VhzjZwcV","created":1795111764983,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" task. Is there any skill that applies? The rule says \"Action = task. Check"}}
+
+data: {"id":"evt_1f4ffc460001rHE9J1zt9VBclt","created":1795111765088,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" BEFORE doing anything.\" But answering one word is not really a task with a skill match. The superpowers skills:"}}
+
+data: {"id":"evt_1f4ffc4c5001JElctYsbjniRt7","created":1795111765189,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" brainstorming (creat"}}
+
+data: {"id":"evt_1f4ffc585001DFYTk7ma8faC4L","created":1795111765381,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":"ive work - no), systematic"}}
+
+data: {"id":"evt_1f4ffc60c001lWKfHhI6u6l22x","created":1795111765516,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":"-debugging (bug - no), etc. None apply to rep"}}
+
+data: {"id":"evt_1f4ffc6710018hY0VvNY2fuIzO","created":1795111765617,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":"lying \"ok\". The"}}
+
+data: {"id":"evt_1f4ffc703001isb0A3N654cPU5","created":1795111765763,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" skill priority says invoke relevant or requested skills before any response or action"}}
+
+data: {"id":"evt_1f4ffc775001KLm7vlMISG1jjC","created":1795111765877,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":". But this is a direct conversational"}}
+
+data: {"id":"evt_1f4ffc7e5001cB25AbP5KwKqos","created":1795111765989,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" answer. Checking skills:"}}
+
+data: {"id":"evt_1f4ffc852001lEp6sHyLW8hzQQ","created":1795111766098,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" there's no skill that says \"answer one"}}
+
+data: {"id":"evt_1f4ffc8bd001A0E333JOLJwDMd","created":1795111766205,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" word\". I think the appropriate"}}
+
+data: {"id":"evt_1f4ffc955001FwVPwxd8eLPswl","created":1795111766357,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" action"}}
+
+data: {"id":"evt_1f4ffc9c8001KCAYCrrIQZ57ua","created":1795111766472,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" is to just reply \"ок\""}}
+
+data: {"id":"evt_1f4ffca2e001JQpWUoPYbB7oxJ","created":1795111766575,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" — actually the user says answer in one word"}}
+
+data: {"id":"evt_1f4ffca95001MAR5NhS6HEYqJx","created":1795111766678,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":": \"ok\". In English \"ok"}}
+
+data: {"id":"evt_1f4ffcafe001FUxJNd3fzH5xyE","created":1795111766782,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":"\" or"}}
+
+data: {"id":"evt_1f4ffcb9000178lAprHYajYH0B","created":1795111766928,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" Russian \"ок\"? The user wrote \""}}
+
+data: {"id":"evt_1f4ffcc0a001WLRZHZwdkJt89D","created":1795111767050,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":"ок\" as the word they want."}}
+
+data: {"id":"evt_1f4ffcc9c001MMsR2GwkUXDOqs","created":1795111767196,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" So I should reply \"ок\".\n\nPer"}}
+
+data: {"id":"evt_1f4ffcd34001B1yHpzHum4SLSS","created":1795111767348,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" honesty: just reply \""}}
+
+data: {"id":"evt_1f4ffcd9b001eBMz8XjfOz9clE","created":1795111767451,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":"ок\". No skill"}}
+
+data: {"id":"evt_1f4ffce050018vTal5rPgBFK07","created":1795111767557,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" applies; the using-superpowers instruction says to check, but there is no"}}
+
+data: {"id":"evt_1f4ffce71001Hrevm5XR03h3vO","created":1795111767665,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" applicable skill for a trivial acknowledgment. I'm"}}
+
+data: {"id":"evt_1f4ffcee8001w83pCwpBDlYO9c","created":1795111767784,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" confident no skill applies here — this is a"}}
+
+data: {"id":"evt_1f4ffcf4e0017eOQgnFKdxOLtz","created":1795111767886,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" chat message, not a task.\n\n"}}
+
+data: {"id":"evt_1f4ffcfb7001sWii6cQADJHoiN","created":1795111767991,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":"So final"}}
+
+data: {"id":"evt_1f4ffd38600138s2i5Yfz9EpDK","created":1795111768966,"type":"location.shutdown","location":{"directory":"/home/user/.local/share/opencode/worktree/ad44c0/example-project/releases/1.0.2.22/dist"},"data":{}}
+
+data: {"id":"evt_1f4ffe605001uL5XIpiqY5a9sn","created":1795111773701,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" answer:"}}
+
+data: {"id":"evt_1f4ffe675001PiRfltAaXTEW2B","created":1795111773813,"type":"session.reasoning.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":" \"ок\"."}}
+
+data: {"id":"evt_1f4ffe6b80017ixpcCQ9FQeaz7","created":1795111773880,"type":"session.text.started","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":8,"version":1}}
+
+data: {"id":"evt_1f4ffe71f001UcVaORy3gG5gQq","created":1795111773984,"type":"session.text.delta","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"delta":"ок"}}
+
+data: {"id":"evt_1f4ffe76d001zlg9Uz9mIfTe88","created":1795111774061,"type":"session.reasoning.ended","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"text":"The user asks: \"Ответь одним словом: ок\" - \"Answer with one word: ok\". This is a trivial request. Per the using-superpowers skill rules, I should check for applicable skills. This is a simple conversational reply, no task. Is there any skill that applies? The rule says \"Action = task. Check BEFORE doing anything.\" But answering one word is not really a task with a skill match. The superpowers skills: brainstorming (creative work - no), systematic-debugging (bug - no), etc. None apply to replying \"ok\". The skill priority says invoke relevant or requested skills before any response or action. But this is a direct conversational answer. Checking skills: there's no skill that says \"answer one word\". I think the appropriate action is to just reply \"ок\" — actually the user says answer in one word: \"ok\". In English \"ok\" or Russian \"ок\"? The user wrote \"ок\" as the word they want. So I should reply \"ок\".\n\nPer honesty: just reply \"ок\". No skill applies; the using-superpowers instruction says to check, but there is no applicable skill for a trivial acknowledgment. I'm confident no skill applies here — this is a chat message, not a task.\n\nSo final answer: \"ок\".","native":{"reasoningField":"reasoning_content"}},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":9,"version":1}}
+
+data: {"id":"evt_1f4ffe77000117doL0HJQr6OhF","created":1795111774064,"type":"session.text.ended","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","ordinal":0,"text":"ок"},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":10,"version":1}}
+
+data: {"id":"evt_1f4ffe773001rY00s12P6HOAB2","created":1795111774067,"type":"session.step.streamed","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH"},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":11,"version":1}}
+
+data: {"id":"evt_1f4ffe775001ha3W1cYoaNRMH2","created":1795111774069,"type":"session.step.ended","location":{"directory":"/tmp/opencode/bot-e2e"},"data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","assistantMessageID":"msg_1f4ffb69e001QUWd44c26F1uVH","finish":"stop","rawFinish":"stop","tokens":{"input":36507,"output":3,"reasoning":300,"cache":{"read":1960,"write":0}},"cost":0},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":12,"version":1}}
+
+data: {"id":"evt_1f4ffe7780012Uq1yF6LwYKuCz","created":1795111774072,"type":"session.usage.updated","data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","cost":0,"tokens":{"input":36507,"output":3,"reasoning":300,"cache":{"read":1960,"write":0}}}}
+
+data: {"id":"evt_1f4ffe77c001ddXQj1DSz7mLqv","created":1795111774076,"type":"session.execution.succeeded","data":{"sessionID":"ses_e0b0053b3ffeiM98RwEnQxxkHR"},"durable":{"aggregateID":"ses_e0b0053b3ffeiM98RwEnQxxkHR","seq":13,"version":1}}
+
+: heartbeat
+
+: heartbeat

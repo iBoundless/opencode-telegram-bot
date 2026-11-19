@@ -5,7 +5,7 @@ import time
 from collections.abc import Callable
 
 from .config import Settings
-from .formatting import completion_text, split_message
+from .formatting import completion_text, format_duration, split_message
 from .keyboards import completion_kb
 from .opencode.client import OpencodeClient
 from .opencode.events import Event
@@ -14,7 +14,11 @@ from .store import Store
 
 log = logging.getLogger(__name__)
 
-FINISH_TYPES = {"session.execution.succeeded", "session.execution.failed"}
+FINISH_TYPES = {
+    "session.execution.succeeded",
+    "session.execution.failed",
+    "session.execution.interrupted",
+}
 START_TYPES = {"session.step.started", "session.execution.started"}
 
 
@@ -66,6 +70,10 @@ class Notifier:
             self._now() - started if started is not None else _busy_duration(session)
         )
 
+        if event.type == "session.execution.interrupted":
+            await self.notify_interrupted(session, duration_ms)
+            return
+
         if session.parent_id:
             await self._fold(session)
             return
@@ -96,6 +104,19 @@ class Notifier:
             for chat_id in sorted(chat_ids):
                 for chunk in split_message(final_text):
                     await self.bot.send_message(chat_id, chunk)
+
+    async def notify_interrupted(self, session: SessionInfo, duration_ms: int = 0) -> None:
+        chat_ids = set(await self.store.subscribers(session.id))
+        chat_ids |= set(await self.store.chats_with_notify_all())
+        if not chat_ids:
+            return
+        text = (
+            f"⏹ Сессия «{session.title or 'Без названия'}» остановлена.\n"
+            f"Длительность: {format_duration(duration_ms)}"
+        )
+        markup = completion_kb(session.id)
+        for chat_id in sorted(chat_ids):
+            await self.bot.send_message(chat_id, text, reply_markup=markup)
 
     async def _fold(self, session: SessionInfo) -> None:
         if session.id in self._folded:

@@ -164,3 +164,17 @@ async def test_duration_from_started_event(tmp_path):
         await store.close()
 
     assert "1 мин 5 с" in bot.sent[0][1]
+
+
+async def test_interrupted_notification(tmp_path):
+    session = _session("ses_1", outcome="interrupted")
+    store, bot, _, notifier = await _setup(tmp_path, [session])
+    try:
+        await store.subscribe(1, "ses_1")
+        await notifier.on_event(_event("ses_1", "session.execution.interrupted"))
+    finally:
+        await store.close()
+
+    assert len(bot.sent) == 1
+    assert "остановлена" in bot.sent[0][1].lower()
+    assert "завершилась" not in bot.sent[0][1].lower()

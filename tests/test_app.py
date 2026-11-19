@@ -152,3 +152,56 @@ async def test_startup_resurfaces_pending_permissions(tmp_path):
     assert service.ensured is True
     assert len(bot.sent) == 1
     assert "shell" in bot.sent[0][1]
+
+
+class FakeProgress:
+    def __init__(self) -> None:
+        self.finished: list[str] = []
+
+    async def on_finished(self, session_id):
+        self.finished.append(session_id)
+
+
+class FakeNotifier:
+    def __init__(self) -> None:
+        self.events: list[str] = []
+
+    async def on_event(self, event):
+        self.events.append(event.type)
+
+
+async def test_interrupted_event_cleans_progress_and_notifies(tmp_path):
+    from ocbot.opencode.events import Event
+
+    store = Store(tmp_path / "bot.db")
+    await store.init()
+    settings = _settings()
+    bot = FakeBot()
+    client = FakeClient()
+    permissions = PermissionRouter(client, store, bot, settings)
+    progress = FakeProgress()
+    notifier = FakeNotifier()
+    app = App(
+        settings=settings,
+        bot=bot,
+        dispatcher=None,
+        client=client,
+        store=store,
+        permissions=permissions,
+        progress=progress,
+        notifier=notifier,
+        service=FakeService(),
+    )
+    try:
+        await app.handle_event(
+            Event(
+                id=None,
+                type="session.execution.interrupted",
+                data={"sessionID": "ses_1", "reason": "user"},
+            )
+        )
+    finally:
+        await store.close()
+
+    assert progress.finished == ["ses_1"]
+    assert notifier.events == ["session.execution.interrupted"]

@@ -24,6 +24,9 @@ PROGRESS_TYPES = {
     "session.tool.called",
     "session.tool.success",
     "session.tool.error",
+    "session.tool.failed",
+    "session.tool.progress",
+    "session.reasoning.delta",
 }
 
 

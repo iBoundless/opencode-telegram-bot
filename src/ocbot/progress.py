@@ -10,6 +10,7 @@ from .formatting import format_duration
 from .opencode.client import OpencodeClient
 from .opencode.events import Event
 from .store import Store
+from .telegram_helpers import bot_call
 
 log = logging.getLogger(__name__)
 
@@ -111,7 +112,7 @@ class ProgressManager:
         for chat_id in sorted(chat_ids):
             current = state.chats.get(chat_id)
             if current is None:
-                sent = await self.bot.send_message(chat_id, text)
+                sent = await bot_call(self.bot.send_message, chat_id, text)
                 state.chats[chat_id] = _ChatProgress(
                     message_id=sent.message_id, last_edit_ms=clock_ms
                 )
@@ -123,8 +124,11 @@ class ProgressManager:
             if clock_ms - current.last_edit_ms < throttle_ms:
                 continue
             try:
-                await self.bot.edit_message_text(
-                    chat_id=chat_id, message_id=current.message_id, text=text
+                await bot_call(
+                    self.bot.edit_message_text,
+                    chat_id=chat_id,
+                    message_id=current.message_id,
+                    text=text,
                 )
             except Exception:  # noqa: BLE001
                 log.exception("failed to edit progress message")
@@ -146,7 +150,7 @@ class ProgressManager:
         self._states.pop(session_id, None)
         for chat_id, message_id in await self.store.pop_progress_messages(session_id):
             try:
-                await self.bot.delete_message(chat_id, message_id)
+                await bot_call(self.bot.delete_message, chat_id, message_id)
             except Exception:  # noqa: BLE001
                 log.exception("failed to delete progress message")
 

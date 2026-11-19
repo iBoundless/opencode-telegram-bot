@@ -11,6 +11,7 @@ from .opencode.client import OpencodeClient
 from .opencode.events import Event
 from .opencode.models import SessionInfo
 from .store import Store
+from .telegram_helpers import bot_call
 
 log = logging.getLogger(__name__)
 
@@ -98,12 +99,12 @@ class Notifier:
         text = completion_text(session, final_text, duration_ms)
         markup = completion_kb(session.id)
         for chat_id in sorted(chat_ids):
-            await self.bot.send_message(chat_id, text, reply_markup=markup)
+            await bot_call(self.bot.send_message, chat_id, text, reply_markup=markup)
 
         if final_text and len(final_text) > 300:
             for chat_id in sorted(chat_ids):
                 for chunk in split_message(final_text):
-                    await self.bot.send_message(chat_id, chunk)
+                    await bot_call(self.bot.send_message, chat_id, chunk)
 
     async def notify_interrupted(self, session: SessionInfo, duration_ms: int = 0) -> None:
         chat_ids = set(await self.store.subscribers(session.id))
@@ -116,7 +117,7 @@ class Notifier:
         )
         markup = completion_kb(session.id)
         for chat_id in sorted(chat_ids):
-            await self.bot.send_message(chat_id, text, reply_markup=markup)
+            await bot_call(self.bot.send_message, chat_id, text, reply_markup=markup)
 
     async def _fold(self, session: SessionInfo) -> None:
         if session.id in self._folded:
@@ -131,7 +132,7 @@ class Notifier:
         text = f"🤖 Субагент «{session.title or 'Без названия'}» завершил работу."
         markup = completion_kb(session.parent_id or session.id)
         for chat_id in sorted(chat_ids):
-            await self.bot.send_message(chat_id, text, reply_markup=markup)
+            await bot_call(self.bot.send_message, chat_id, text, reply_markup=markup)
 
     async def _final_text(self, session_id: str) -> str | None:
         try:

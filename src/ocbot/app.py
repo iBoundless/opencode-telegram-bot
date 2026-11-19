@@ -147,11 +147,23 @@ class App:
         if self.progress is not None:
             await self.progress.on_event(event, int(time.time() * 1000))
 
+    async def reconcile_loop(self, interval_seconds: float = 30.0) -> None:
+        """Pick up permission requests that arrived while SSE was down."""
+        while True:
+            await asyncio.sleep(interval_seconds)
+            try:
+                await self.permissions.handle_requested()
+            except asyncio.CancelledError:
+                raise
+            except Exception:  # noqa: BLE001
+                log.exception("permission reconcile failed")
+
     async def run(self) -> None:
         await self.store.init()
         await self.startup_checks()
         self.tasks.append(asyncio.create_task(self.consume_events()))
         self.tasks.append(asyncio.create_task(self.permissions.remind_loop()))
+        self.tasks.append(asyncio.create_task(self.reconcile_loop()))
         try:
             if self.dispatcher is not None:
                 try:

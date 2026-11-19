@@ -13,6 +13,7 @@ from .keyboards import permission_kb
 from .opencode import OpencodeUnavailable, SessionNotFound
 from .opencode.client import Decision, OpencodeClient
 from .store import Store
+from .telegram_helpers import bot_call
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +65,8 @@ class PermissionRouter:
             if await self.store.get_permission_message(request.id) is not None:
                 continue
             title = await self._session_title(request.session_id)
-            sent = await self.bot.send_message(
+            sent = await bot_call(
+                self.bot.send_message,
                 self._chat_ids[0],
                 permission_text(request, title),
                 reply_markup=permission_kb(request.id),
@@ -111,7 +113,7 @@ class PermissionRouter:
             if row.reminded or now - row.sent_at < limit:
                 continue
             try:
-                await self.bot.send_message(row.chat_id, REMINDER_TEXT)
+                await bot_call(self.bot.send_message, row.chat_id, REMINDER_TEXT)
             except Exception:  # noqa: BLE001
                 log.exception("failed to send permission reminder")
                 continue
@@ -141,7 +143,8 @@ class PermissionRouter:
         if row is None:
             return
         try:
-            await self.bot.edit_message_text(
+            await bot_call(
+                self.bot.edit_message_text,
                 chat_id=row.chat_id,
                 message_id=row.message_id,
                 text=f"✅ {note}",

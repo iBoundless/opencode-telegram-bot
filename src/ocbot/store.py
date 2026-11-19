@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS progress (
 );
 CREATE TABLE IF NOT EXISTS permission_messages (
     request_id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL DEFAULT '',
     chat_id INTEGER NOT NULL,
     message_id INTEGER NOT NULL,
     sent_at INTEGER NOT NULL,
@@ -50,6 +51,7 @@ class PermissionMessage:
     message_id: int
     sent_at: int
     reminded: bool = False
+    session_id: str = ''
 
 
 class Store:
@@ -172,25 +174,33 @@ class Store:
         return [(row[0], row[1]) for row in rows]
 
     async def set_permission_message(
-        self, request_id: str, chat_id: int, message_id: int, sent_at: int
+        self,
+        request_id: str,
+        chat_id: int,
+        message_id: int,
+        sent_at: int,
+        session_id: str = '',
     ) -> None:
         await self._connection.execute(
             """
-            INSERT INTO permission_messages(request_id, chat_id, message_id, sent_at)
-            VALUES(?, ?, ?, ?)
+            INSERT INTO permission_messages(
+                request_id, session_id, chat_id, message_id, sent_at
+            )
+            VALUES(?, ?, ?, ?, ?)
             ON CONFLICT(request_id) DO UPDATE SET
+                session_id = excluded.session_id,
                 chat_id = excluded.chat_id,
                 message_id = excluded.message_id,
                 sent_at = excluded.sent_at
             """,
-            (request_id, chat_id, message_id, sent_at),
+            (request_id, session_id, chat_id, message_id, sent_at),
         )
         await self._connection.commit()
 
     async def get_permission_message(self, request_id: str) -> PermissionMessage | None:
         cursor = await self._connection.execute(
             """
-            SELECT request_id, chat_id, message_id, sent_at, reminded
+            SELECT request_id, chat_id, message_id, sent_at, reminded, session_id
             FROM permission_messages WHERE request_id = ?
             """,
             (request_id,),
@@ -205,12 +215,13 @@ class Store:
             message_id=row[2],
             sent_at=row[3],
             reminded=bool(row[4]),
+            session_id=row[5] or "",
         )
 
     async def list_permission_messages(self) -> list[PermissionMessage]:
         cursor = await self._connection.execute(
             """
-            SELECT request_id, chat_id, message_id, sent_at, reminded
+            SELECT request_id, chat_id, message_id, sent_at, reminded, session_id
             FROM permission_messages ORDER BY sent_at
             """
         )
@@ -223,6 +234,7 @@ class Store:
                 message_id=row[2],
                 sent_at=row[3],
                 reminded=bool(row[4]),
+                session_id=row[5] or "",
             )
             for row in rows
         ]

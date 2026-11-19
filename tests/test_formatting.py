@@ -3,11 +3,11 @@ from __future__ import annotations
 from ocbot.formatting import (
     completion_text,
     format_duration,
-    md_to_html,
     permission_text,
     session_line,
     split_message,
     status_icon,
+    utf16_len,
 )
 from ocbot.opencode.models import ModelRef, PermissionRequest, SessionInfo, SessionTime
 
@@ -22,7 +22,7 @@ def test_split_never_exceeds_limit():
     text = ("Абзац один. " * 100 + "\n\n") * 20
     parts = split_message(text, limit=4000)
     assert parts
-    assert all(len(part) <= 4000 for part in parts)
+    assert all(utf16_len(part) <= 4000 for part in parts)
     assert sum(len(part) for part in parts) <= len(text) + 10
 
 
@@ -35,27 +35,17 @@ def test_split_hard_cuts_long_line():
     assert [len(part) for part in parts] == [4000, 4000, 1000]
 
 
-def test_html_escapes_specials():
-    out = md_to_html("a < b & c > d")
-    assert out == "a &lt; b &amp; c &gt; d"
+def test_split_counts_utf16_units():
+    # An emoji is one Python character but two UTF-16 code units.
+    parts = split_message("😀" * 3000, limit=4000)
+    assert len(parts) == 2
+    assert all(utf16_len(part) <= 4000 for part in parts)
+    assert "".join(parts) == "😀" * 3000
 
 
-def test_code_fence_becomes_pre():
-    out = md_to_html("до\n```python\nprint(1)\n```\nпосле")
-    assert "<pre>" in out and "print(1)" in out
-    assert "```" not in out
-
-
-def test_inline_code_becomes_code():
-    assert md_to_html("запусти `ls -la`") == "запусти <code>ls -la</code>"
-
-
-def test_bold_becomes_b():
-    assert md_to_html("это **важно**") == "это <b>важно</b>"
-
-
-def test_html_inside_code_is_escaped():
-    assert "&lt;b&gt;" in md_to_html("```\n<b>\n```")
+def test_utf16_len_ascii_and_emoji():
+    assert utf16_len("abc") == 3
+    assert utf16_len("😀") == 2
 
 
 def test_busy_icon():
@@ -107,3 +97,15 @@ def test_permission_text_lists_resources():
     assert "rm -rf /tmp/x" in text
     assert "Моя сессия" in text
     assert "Всегда" in text
+
+
+def test_permission_text_limits_huge_resources():
+    request = PermissionRequest(
+        id="per_1",
+        sessionID="ses_1",
+        action="shell",
+        resources=[f"line {index} " + "x" * 500 for index in range(30)],
+    )
+    text = permission_text(request, None)
+    assert len(text) < 4000
+    assert "и еще 20" in text

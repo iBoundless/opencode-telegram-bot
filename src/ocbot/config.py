@@ -32,7 +32,7 @@ def opencode_credentials() -> tuple[str, str]:
 
 class Settings(BaseModel):
     telegram_bot_token: str = Field(min_length=1)
-    allowed_user_ids: list[int] = []
+    allowed_user_ids: list[int] = Field(min_length=1)
     opencode_url: str = "http://127.0.0.1:49374"
     opencode_password: str = ""
     opencode_bin: str = _default_bin()

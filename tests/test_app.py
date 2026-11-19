@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import logging
+import sys
 from types import SimpleNamespace
 
 from ocbot.app import (
     AllowlistMiddleware,
     App,
+    RedactingFormatter,
     SecretRedactionFilter,
     acquire_lock,
+    handle_error,
 )
 from ocbot.config import Settings
+from ocbot.opencode.events import Event
 from ocbot.opencode.models import PermissionRequest, SessionInfo
 from ocbot.permissions import PermissionRouter
 from ocbot.store import Store
@@ -79,6 +83,69 @@ def test_log_redacts_token_and_password():
     assert "123:secret-token" not in text
     assert "hunter2" not in text
     assert text.count("***") == 2
+
+
+def test_formatter_redacts_traceback():
+    try:
+        raise RuntimeError("hunter2")
+    except RuntimeError:
+        record = logging.LogRecord(
+            "ocbot.test",
+            logging.ERROR,
+            __file__,
+            1,
+            "handler failed",
+            (),
+            sys.exc_info(),
+        )
+    text = RedactingFormatter("%(message)s", ["hunter2"]).format(record)
+    assert "hunter2" not in text
+    assert "***" in text
+
+
+class FakeErrorBot:
+    def __init__(self) -> None:
+        self.answered: list[tuple[str, str, bool]] = []
+        self.sent: list[tuple[int, str]] = []
+
+    async def answer_callback_query(self, callback_id, text, show_alert=False):
+        self.answered.append((callback_id, text, show_alert))
+
+    async def send_message(self, chat_id, text):
+        self.sent.append((chat_id, text))
+
+
+async def test_handle_error_answers_callback_and_reports():
+    bot = FakeErrorBot()
+    error = SimpleNamespace(
+        exception=RuntimeError("boom"),
+        update=SimpleNamespace(
+            callback_query=SimpleNamespace(
+                id="cb_1",
+                message=SimpleNamespace(chat=SimpleNamespace(id=7)),
+            ),
+            message=None,
+        ),
+    )
+
+    assert await handle_error(error, bot) is True
+
+    assert bot.answered == [("cb_1", "Ошибка, попробуй еще раз", True)]
+    assert bot.sent == [(7, "Не удалось выполнить действие. Попробуй еще раз.")]
+
+
+async def test_handle_error_reports_plain_message_chat():
+    bot = FakeErrorBot()
+    error = SimpleNamespace(
+        exception=RuntimeError("boom"),
+        update=SimpleNamespace(
+            callback_query=None,
+            message=SimpleNamespace(chat=SimpleNamespace(id=9)),
+        ),
+    )
+
+    assert await handle_error(error, bot) is True
+    assert bot.sent == [(9, "Не удалось выполнить действие. Попробуй еще раз.")]
 
 
 class FakeBot:
@@ -157,9 +224,13 @@ async def test_startup_resurfaces_pending_permissions(tmp_path):
 class FakeProgress:
     def __init__(self) -> None:
         self.finished: list[str] = []
+        self.events: list[str] = []
 
     async def on_finished(self, session_id):
         self.finished.append(session_id)
+
+    async def on_event(self, event, clock_ms):
+        self.events.append(event.type)
 
 
 class FakeNotifier:
@@ -205,3 +276,59 @@ async def test_interrupted_event_cleans_progress_and_notifies(tmp_path):
 
     assert progress.finished == ["ses_1"]
     assert notifier.events == ["session.execution.interrupted"]
+
+
+def _app(tmp_path, *, progress=None, notifier=None):
+    store = Store(tmp_path / "bot.db")
+    settings = _settings()
+    bot = FakeBot()
+    client = FakeClient()
+    permissions = PermissionRouter(client, store, bot, settings)
+    return App(
+        settings=settings,
+        bot=bot,
+        dispatcher=None,
+        client=client,
+        store=store,
+        permissions=permissions,
+        progress=progress,
+        notifier=notifier,
+        service=FakeService(),
+    )
+
+
+async def test_start_event_reaches_notifier(tmp_path):
+    progress = FakeProgress()
+    notifier = FakeNotifier()
+    app = _app(tmp_path, progress=progress, notifier=notifier)
+    try:
+        await app.store.init()
+        await app.handle_event(
+            Event(
+                id=None,
+                type="session.execution.started",
+                data={"sessionID": "ses_1"},
+            )
+        )
+    finally:
+        await app.store.close()
+
+    assert notifier.events == ["session.execution.started"]
+    assert progress.events == ["session.execution.started"]
+    assert progress.finished == []
+
+
+async def test_idle_event_finishes_progress_and_notifies(tmp_path):
+    progress = FakeProgress()
+    notifier = FakeNotifier()
+    app = _app(tmp_path, progress=progress, notifier=notifier)
+    try:
+        await app.store.init()
+        await app.handle_event(
+            Event(id=None, type="session.idle", data={"sessionID": "ses_1"})
+        )
+    finally:
+        await app.store.close()
+
+    assert progress.finished == ["ses_1"]
+    assert notifier.events == ["session.idle"]

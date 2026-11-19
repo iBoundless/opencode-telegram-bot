@@ -19,8 +19,10 @@ FINISH_TYPES = {
     "session.execution.succeeded",
     "session.execution.failed",
     "session.execution.interrupted",
+    "session.idle",
 }
 START_TYPES = {"session.step.started", "session.execution.started"}
+IDLE_DEDUP_MS = 15_000
 
 
 def _now_ms() -> int:
@@ -46,6 +48,7 @@ class Notifier:
         self._now = now_ms or _now_ms
         self._started: dict[str, int] = {}
         self._folded: set[str] = set()
+        self._finished_at: dict[str, int] = {}
 
     async def on_event(self, event: Event) -> None:
         session_id = event.data.get("sessionID")
@@ -55,10 +58,18 @@ class Notifier:
         if event.type in START_TYPES:
             self._started.setdefault(session_id, self._now())
             self._folded.discard(session_id)
+            self._finished_at.pop(session_id, None)
             return
 
         if event.type not in FINISH_TYPES:
             return
+
+        now = self._now()
+        if event.type == "session.idle":
+            last = self._finished_at.get(session_id)
+            if last is not None and now - last < IDLE_DEDUP_MS:
+                return
+        self._finished_at[session_id] = now
 
         try:
             session = await self.client.get_session(session_id)
@@ -66,10 +77,12 @@ class Notifier:
             log.exception("failed to load finished session %s", session_id)
             return
 
+        if event.type == "session.idle" and session.time.is_busy():
+            # A new execution already started, so this idle signal is stale.
+            return
+
         started = self._started.pop(session_id, None)
-        duration_ms = (
-            self._now() - started if started is not None else _busy_duration(session)
-        )
+        duration_ms = now - started if started is not None else _busy_duration(session)
 
         if event.type == "session.execution.interrupted":
             await self.notify_interrupted(session, duration_ms)
@@ -99,12 +112,12 @@ class Notifier:
         text = completion_text(session, final_text, duration_ms)
         markup = completion_kb(session.id)
         for chat_id in sorted(chat_ids):
-            await bot_call(self.bot.send_message, chat_id, text, reply_markup=markup)
+            await self._send(chat_id, text, markup)
 
         if final_text and len(final_text) > 300:
             for chat_id in sorted(chat_ids):
                 for chunk in split_message(final_text):
-                    await bot_call(self.bot.send_message, chat_id, chunk)
+                    await self._send(chat_id, chunk)
 
     async def notify_interrupted(self, session: SessionInfo, duration_ms: int = 0) -> None:
         chat_ids = set(await self.store.subscribers(session.id))
@@ -117,7 +130,7 @@ class Notifier:
         )
         markup = completion_kb(session.id)
         for chat_id in sorted(chat_ids):
-            await bot_call(self.bot.send_message, chat_id, text, reply_markup=markup)
+            await self._send(chat_id, text, markup)
 
     async def _fold(self, session: SessionInfo) -> None:
         if session.id in self._folded:
@@ -132,7 +145,14 @@ class Notifier:
         text = f"🤖 Субагент «{session.title or 'Без названия'}» завершил работу."
         markup = completion_kb(session.parent_id or session.id)
         for chat_id in sorted(chat_ids):
+            await self._send(chat_id, text, markup)
+
+    async def _send(self, chat_id: int, text: str, markup=None) -> None:
+        """One failed recipient must not stop delivery to the others."""
+        try:
             await bot_call(self.bot.send_message, chat_id, text, reply_markup=markup)
+        except Exception:  # noqa: BLE001
+            log.exception("failed to notify chat %s", chat_id)
 
     async def _final_text(self, session_id: str) -> str | None:
         try:

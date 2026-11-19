@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from aiogram.fsm.storage.memory import MemoryStorage
 
-from ocbot.handlers.prompts import save_pending, take_pending
+from ocbot.handlers.prompts import save_draft, take_draft
 from ocbot.opencode import SessionNotFound
 from ocbot.opencode.models import ModelRef, SessionInfo, SessionTime
 from ocbot.permissions_profile import BOT_SESSION_PERMISSIONS, evaluate
@@ -189,10 +189,39 @@ async def test_cancel_clears_pending_text():
     key = StorageKey(bot_id=1, chat_id=1, user_id=1)
     state = FSMContext(storage=storage, key=key)
 
-    await save_pending(state, "ses_1", "черновик")
-    assert await take_pending(state) == ("ses_1", "черновик")
-    assert await take_pending(state) is None
-    assert await state.get_data() == {}
+    draft_id = await save_draft(state, "ses_1", "черновик")
+    assert await take_draft(state, draft_id) == ("ses_1", "черновик")
+    assert await take_draft(state, draft_id) is None
+    assert (await state.get_data()).get("drafts") == {}
+
+
+async def test_second_draft_does_not_overwrite_first():
+    storage = MemoryStorage()
+    key = StorageKey(bot_id=1, chat_id=1, user_id=1)
+    state = FSMContext(storage=storage, key=key)
+
+    first = await save_draft(state, "ses_1", "первый")
+    second = await save_draft(state, "ses_2", "второй")
+
+    assert first != second
+    assert await take_draft(state, first) == ("ses_1", "первый")
+    assert await take_draft(state, second) == ("ses_2", "второй")
+    assert (await state.get_data()).get("drafts") == {}
+
+
+async def test_draft_ids_never_repeat_after_cleanup():
+    storage = MemoryStorage()
+    key = StorageKey(bot_id=1, chat_id=1, user_id=1)
+    state = FSMContext(storage=storage, key=key)
+
+    first = await save_draft(state, "ses_1", "первый")
+    assert await take_draft(state, first) is not None
+    second = await save_draft(state, "ses_1", "второй")
+
+    # A leftover button from the first draft must not target the new one.
+    assert second != first
+    assert await take_draft(state, first) is None
+    assert await take_draft(state, second) == ("ses_1", "второй")
 
 
 def test_parse_default_model():

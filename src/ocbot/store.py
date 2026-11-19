@@ -264,6 +264,9 @@ class Store:
             "UPDATE chats SET active_session = NULL WHERE active_session = ?",
             (session_id,),
         )
+        await self._connection.execute(
+            "DELETE FROM permission_messages WHERE session_id = ?", (session_id,)
+        )
         await self._connection.commit()
 
     async def meta_get(self, key: str) -> str | None:

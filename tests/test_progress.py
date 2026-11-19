@@ -132,3 +132,39 @@ async def test_no_progress_for_unsubscribed_session(tmp_path):
     finally:
         await store.close()
     assert bot.sent == []
+
+
+async def test_tool_failed_clears_active_tool(tmp_path):
+    store, bot, _, manager, _ = await _setup(tmp_path)
+    try:
+        await store.subscribe(1, "ses_1")
+        await manager.on_event(_tool("ses_1", "bash"), 1000)
+        await manager.on_event(
+            Event(
+                id=None,
+                type="session.tool.failed",
+                data={"sessionID": "ses_1", "name": "bash"},
+            ),
+            3000,
+        )
+    finally:
+        await store.close()
+
+    assert "bash" in bot.sent[0][1]
+    assert "bash" not in bot.edits[-1][2]
+
+
+async def test_progress_reuses_stored_message_after_restart(tmp_path):
+    store, bot, _, manager, _ = await _setup(tmp_path)
+    try:
+        await store.subscribe(1, "ses_1")
+        await store.set_progress_message("ses_1", 1, 77)
+        await manager.on_event(_delta("ses_1", "после рестарта"), 1000)
+    finally:
+        await store.close()
+
+    assert bot.sent == []
+    assert bot.edits
+    assert bot.edits[-1][0] == 1
+    assert bot.edits[-1][1] == 77
+    assert "после рестарта" in bot.edits[-1][2]

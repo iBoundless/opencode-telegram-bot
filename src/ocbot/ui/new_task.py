@@ -8,15 +8,23 @@ from ..keyboards import (
 )
 from ..opencode.models import ModelInfo, Project
 
+PER_PAGE = 8
 
-def projects_view(projects: list[Project], page: int = 0):
+
+def projects_view(paths: list[str], page: int = 0):
+    total = max(1, (len(paths) + PER_PAGE - 1) // PER_PAGE)
+    page = min(max(0, page), total - 1)
     text = (
         "Новая задача. Шаг 1 из 3: проект.\n"
         "\n"
+        f"Страница {page + 1} из {total}.\n"
         "Выбери проект из недавних или укажи папку вручную."
     )
-    paths = [project.canonical for project in projects]
-    return text, new_task_projects(paths, page=page)
+    return text, new_task_projects(paths, page=page, per_page=PER_PAGE)
+
+
+def project_paths(projects: list[Project]) -> list[str]:
+    return [project.canonical for project in projects]
 
 
 def path_prompt():
@@ -59,7 +67,8 @@ def prompt_view(project: str, model_label: str):
 
 
 def model_pairs(models: list[ModelInfo]) -> list[tuple[str, str]]:
-    return [(model.provider_id, model.model_id) for model in models]
+    """Sorted unique pairs so button indexes always match this list."""
+    return sorted({(model.provider_id, model.model_id) for model in models})
 
 
 def provider_names(models: list[ModelInfo]) -> list[str]:

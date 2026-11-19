@@ -173,6 +173,17 @@ async def test_http_404_raises_not_found(client):
 
 
 @respx.mock
+async def test_404_outside_session_path_is_api_error(client):
+    respx.get(f"{BASE}/api/model").mock(
+        return_value=httpx.Response(404, json={"message": "no such route"})
+    )
+    with pytest.raises(ApiError) as exc:
+        await client.list_models()
+    assert exc.value.status == 404
+    assert not isinstance(exc.value, SessionNotFound)
+
+
+@respx.mock
 async def test_connection_error_raises_unavailable(client):
     respx.get(f"{BASE}/api/info").mock(side_effect=httpx.ConnectError("refused"))
     with pytest.raises(OpencodeUnavailable):

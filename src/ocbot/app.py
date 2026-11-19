@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from aiogram import BaseMiddleware, Dispatcher
-from aiogram.types import BotCommand, TelegramObject
+from aiogram.types import BotCommand, ErrorEvent, TelegramObject
 from aiogram.client.bot import Bot
 
 from .config import Settings
@@ -24,7 +24,7 @@ from .handlers import (
     service_router,
     sessions_router,
 )
-from .notifications import FINISH_TYPES, Notifier
+from .notifications import FINISH_TYPES, START_TYPES, Notifier
 from .opencode.client import OpencodeClient
 from .opencode.events import Event
 from .opencode.service import ServiceController
@@ -53,6 +53,20 @@ class SecretRedactionFilter(logging.Filter):
             record.msg = redacted
             record.args = ()
         return True
+
+
+class RedactingFormatter(logging.Formatter):
+    """Also redacts tracebacks, which the filter cannot see yet."""
+
+    def __init__(self, fmt: str, secrets: list[str]) -> None:
+        super().__init__(fmt)
+        self._secrets = [secret for secret in secrets if secret]
+
+    def format(self, record: logging.LogRecord) -> str:
+        text = super().format(record)
+        for secret in self._secrets:
+            text = text.replace(secret, "***")
+        return text
 
 
 class AllowlistMiddleware(BaseMiddleware):
@@ -85,15 +99,14 @@ def acquire_lock(path: Path) -> TextIO | None:
 
 
 def configure_logging(settings: Settings, stream=None) -> logging.Handler:
+    secrets = [settings.telegram_bot_token, settings.opencode_password]
     handler = logging.StreamHandler(stream)
     handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
-    )
-    handler.addFilter(
-        SecretRedactionFilter(
-            [settings.telegram_bot_token, settings.opencode_password]
+        RedactingFormatter(
+            "%(asctime)s %(levelname)s %(name)s: %(message)s", secrets
         )
     )
+    handler.addFilter(SecretRedactionFilter(secrets))
     root = logging.getLogger()
     root.setLevel(settings.log_level.upper())
     root.handlers[:] = [handler]
@@ -137,6 +150,9 @@ class App:
             return
 
         session_id = event.data.get("sessionID")
+        if event.type in START_TYPES and self.notifier is not None:
+            await self.notifier.on_event(event)
+
         if event.type in FINISH_TYPES:
             if session_id and self.progress is not None:
                 await self.progress.on_finished(str(session_id))
@@ -191,6 +207,31 @@ class App:
         await self.store.close()
 
 
+async def handle_error(event: ErrorEvent, bot: Bot) -> bool:
+    """Answer the user instead of letting an exception abort silently."""
+    log.error("update handling failed", exc_info=event.exception)
+    update = event.update
+    callback = update.callback_query
+    message = update.message
+    chat_id = None
+    if message is not None:
+        chat_id = message.chat.id
+    elif callback is not None and callback.message is not None:
+        chat_id = callback.message.chat.id
+    try:
+        if callback is not None:
+            await bot.answer_callback_query(
+                callback.id, "Ошибка, попробуй еще раз", show_alert=True
+            )
+        if chat_id is not None:
+            await bot.send_message(
+                chat_id, "Не удалось выполнить действие. Попробуй еще раз."
+            )
+    except Exception:  # noqa: BLE001
+        log.exception("failed to report a handler error")
+    return True
+
+
 async def _set_commands(bot: Bot) -> None:
     await bot.set_my_commands(
         [
@@ -214,6 +255,7 @@ def build_app(settings: Settings) -> App:
     dispatcher["ctx"] = ctx
     dispatcher["perms"] = permissions
     dispatcher["service"] = service
+    dispatcher.errors.register(handle_error)
 
     for router in (
         menu_router,
@@ -246,8 +288,10 @@ def build_app(settings: Settings) -> App:
 __all__ = [
     "AllowlistMiddleware",
     "App",
+    "RedactingFormatter",
     "SecretRedactionFilter",
     "acquire_lock",
     "build_app",
     "configure_logging",
+    "handle_error",
 ]

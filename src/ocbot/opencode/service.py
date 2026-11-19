@@ -50,14 +50,18 @@ class ServiceController:
         self._poll_timeout = poll_timeout
 
     async def _run_command(self, *args: str) -> tuple[int, str]:
-        process = await asyncio.create_subprocess_exec(
-            self.settings.opencode_bin,
-            "service",
-            *args,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
-        )
-        output, _ = await asyncio.wait_for(process.communicate(), timeout=30)
+        try:
+            process = await asyncio.create_subprocess_exec(
+                self.settings.opencode_bin,
+                "service",
+                *args,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
+            output, _ = await asyncio.wait_for(process.communicate(), timeout=30)
+        except (OSError, TimeoutError) as exc:
+            log.warning("opencode service %s failed: %s", " ".join(args), exc)
+            return 1, ""
         return process.returncode or 0, output.decode("utf-8", "replace")
 
     async def status(self) -> ServiceStatus:

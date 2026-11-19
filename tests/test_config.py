@@ -48,6 +48,7 @@ def test_settings_password_from_env_wins(tmp_path, monkeypatch):
     svc = tmp_path / "service.json"
     svc.write_text('{"password": "from-file"}')
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "1:x")
+    monkeypatch.setenv("ALLOWED_USER_IDS", "11")
     monkeypatch.setenv("OPENCODE_SERVICE_JSON", str(svc))
     monkeypatch.setenv("OPENCODE_PASSWORD", "from-env")
     assert Settings.from_env().opencode_password == "from-env"
@@ -56,12 +57,21 @@ def test_settings_password_from_env_wins(tmp_path, monkeypatch):
 def test_settings_defaults(monkeypatch):
     _clear_env(monkeypatch)
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "1:x")
+    monkeypatch.setenv("ALLOWED_USER_IDS", "11")
     s = Settings.from_env()
     assert s.opencode_url == "http://127.0.0.1:49374"
     assert s.permission_reminder_minutes == 5
     assert s.progress_edit_seconds == 2.0
-    assert s.allowed_user_ids == []
+    assert s.allowed_user_ids == [11]
     assert isinstance(s.db_path, Path)
+
+
+def test_settings_requires_allowlist(monkeypatch):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "1:x")
+    monkeypatch.delenv("ALLOWED_USER_IDS", raising=False)
+    with pytest.raises(ValidationError):
+        Settings.from_env()
 
 
 def test_settings_rejects_empty_token(monkeypatch):

@@ -1,67 +1,50 @@
 from __future__ import annotations
 
-import re
-from html import escape
-
 from .opencode.models import PermissionRequest, SessionInfo
 
-_FENCE_RE = re.compile(r"```([^\n`]*)\n(.*?)```", re.DOTALL)
-_INLINE_CODE_RE = re.compile(r"`([^`\n]+)`")
-_BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
+TELEGRAM_LIMIT = 4000
+MAX_RESOURCES = 10
+MAX_RESOURCE_CHARS = 200
 
 
-def md_to_html(text: str) -> str:
-    """Convert a small markdown subset to Telegram-safe HTML."""
-    if not text:
-        return ""
-
-    parts: list[str] = []
-    position = 0
-    for match in _FENCE_RE.finditer(text):
-        parts.append(_inline(text[position : match.start()]))
-        code = escape(match.group(2))
-        parts.append(f"<pre><code>{code}</code></pre>")
-        position = match.end()
-    parts.append(_inline(text[position:]))
-    return "".join(parts)
+def utf16_len(text: str) -> int:
+    """Length in UTF-16 code units, which is what Telegram counts."""
+    return len(text.encode("utf-16-le")) // 2
 
 
-def _inline(text: str) -> str:
-    result: list[str] = []
-    position = 0
-    for match in _INLINE_CODE_RE.finditer(text):
-        result.append(_format_plain(text[position : match.start()]))
-        result.append(f"<code>{escape(match.group(1))}</code>")
-        position = match.end()
-    result.append(_format_plain(text[position:]))
-    return "".join(result)
+def _take_prefix(text: str, limit: int) -> tuple[str, str]:
+    """Split text so the first part fits the UTF-16 limit."""
+    if utf16_len(text) <= limit:
+        return text, ""
+    units = 0
+    for index, char in enumerate(text):
+        char_units = 2 if ord(char) > 0xFFFF else 1
+        if units + char_units > limit:
+            return text[:index], text[index:]
+        units += char_units
+    return text, ""
 
 
-def _format_plain(text: str) -> str:
-    escaped = escape(text)
-    return _BOLD_RE.sub(r"<b>\1</b>", escaped)
-
-
-def split_message(text: str, limit: int = 4000) -> list[str]:
+def split_message(text: str, limit: int = TELEGRAM_LIMIT) -> list[str]:
     text = text.strip()
     if not text:
         return []
-    if len(text) <= limit:
+    if utf16_len(text) <= limit:
         return [text]
 
     chunks: list[str] = []
     current = ""
     for paragraph in text.split("\n\n"):
         candidate = f"{current}\n\n{paragraph}" if current else paragraph
-        if len(candidate) <= limit:
+        if utf16_len(candidate) <= limit:
             current = candidate
             continue
         if current:
             chunks.append(current)
             current = ""
-        while len(paragraph) > limit:
-            chunks.append(paragraph[:limit])
-            paragraph = paragraph[limit:]
+        while utf16_len(paragraph) > limit:
+            head, paragraph = _take_prefix(paragraph, limit)
+            chunks.append(head)
         current = paragraph
     if current:
         chunks.append(current)
@@ -97,6 +80,13 @@ def format_duration(ms: int) -> str:
     return f"{seconds} с"
 
 
+def _short_resource(resource: str) -> str:
+    resource = resource.strip().replace("\n", " ")
+    if len(resource) > MAX_RESOURCE_CHARS:
+        return resource[:MAX_RESOURCE_CHARS] + "…"
+    return resource
+
+
 def permission_text(request: PermissionRequest, title: str | None) -> str:
     lines = [
         "🔐 Запрос подтверждения",
@@ -105,11 +95,14 @@ def permission_text(request: PermissionRequest, title: str | None) -> str:
         f"Действие: {request.action}",
         "Ресурсы:",
     ]
-    lines.extend(f"  {resource}" for resource in request.resources or ["-"])
+    resources = list(request.resources or [])
+    lines.extend(f"  {_short_resource(item)}" for item in resources[:MAX_RESOURCES] or ["-"])
+    if len(resources) > MAX_RESOURCES:
+        lines.append(f"  ... и еще {len(resources) - MAX_RESOURCES}")
     if request.source and request.source.type:
         lines.append(f"Источник: {request.source.type}")
     if request.message:
-        lines.append(f"Пояснение: {request.message}")
+        lines.append(f"Пояснение: {_short_resource(request.message)}")
     lines.extend(
         [
             "",

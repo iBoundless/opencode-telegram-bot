@@ -41,7 +41,9 @@ def _model_label(data: dict) -> str:
     return f"{data['model_provider']}/{data['model_id']}"
 
 
-async def _show_projects(callback: CallbackQuery, ctx: BotContext, state: FSMContext) -> None:
+async def _show_projects(
+    callback: CallbackQuery, ctx: BotContext, state: FSMContext, page: int = 0
+) -> None:
     try:
         projects = await ctx.client.list_projects()
     except OpencodeUnavailable:
@@ -52,9 +54,10 @@ async def _show_projects(callback: CallbackQuery, ctx: BotContext, state: FSMCon
         )
         return
     projects = sorted(projects, key=lambda item: item.time.active, reverse=True)
-    await state.update_data(project_paths=[item.canonical for item in projects])
+    paths = view.project_paths(projects)
+    await state.update_data(project_paths=paths)
     await state.set_state(None)
-    text, markup = view.projects_view(projects)
+    text, markup = view.projects_view(paths, page=page)
     await safe_edit(callback, text, markup)
 
 
@@ -65,12 +68,29 @@ async def start_new_task(callback: CallbackQuery, ctx: BotContext, state: FSMCon
     await callback.answer()
 
 
+@router.callback_query(F.data.startswith("tpage:"))
+async def projects_page(
+    callback: CallbackQuery, ctx: BotContext, state: FSMContext
+) -> None:
+    raw = (callback.data or "").split(":", 1)[1]
+    page = int(raw) if raw.isdigit() else 0
+    data = await state.get_data()
+    paths = list(data.get("project_paths") or [])
+    if not paths:
+        await _show_projects(callback, ctx, state, page=page)
+    else:
+        text, markup = view.projects_view(paths, page=page)
+        await safe_edit(callback, text, markup)
+    await callback.answer()
+
+
 @router.callback_query(F.data.startswith("tproj:"))
 async def pick_project(callback: CallbackQuery, ctx: BotContext, state: FSMContext) -> None:
-    index = int((callback.data or "").split(":", 1)[1])
+    raw = (callback.data or "").split(":", 1)[1]
+    index = int(raw) if raw.isdigit() else -1
     data = await state.get_data()
     paths = data.get("project_paths") or []
-    if index >= len(paths):
+    if not 0 <= index < len(paths):
         await callback.answer("Список устарел, открой заново", show_alert=True)
         await _show_projects(callback, ctx, state)
         return
@@ -134,7 +154,7 @@ async def pick_provider(callback: CallbackQuery, state: FSMContext) -> None:
     provider = (callback.data or "").split(":", 1)[1]
     data = await state.get_data()
     pairs = [tuple(pair) for pair in data.get("model_pairs") or []]
-    filtered = [pair for pair in pairs if pair[0] == provider]
+    filtered = sorted({pair for pair in pairs if pair[0] == provider})
     await state.update_data(model_filter=filtered, provider=provider)
     text, markup = view.models_view(filtered, provider)
     await safe_edit(callback, text, markup)
@@ -154,7 +174,7 @@ async def pick_model(callback: CallbackQuery, ctx: BotContext, state: FSMContext
     else:
         index = int(raw)
         filtered = [tuple(pair) for pair in data.get("model_filter") or []]
-        if index >= len(filtered):
+        if not 0 <= index < len(filtered):
             await callback.answer("Список устарел", show_alert=True)
             return
         provider, model_id = filtered[index]

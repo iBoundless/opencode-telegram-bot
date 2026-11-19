@@ -12,9 +12,12 @@ from ocbot.store import Store
 class FakeBot:
     def __init__(self) -> None:
         self.sent: list[tuple[int, str, object]] = []
+        self.fail_chats: set[int] = set()
         self._next = 1
 
     async def send_message(self, chat_id, text, reply_markup=None):
+        if chat_id in self.fail_chats:
+            raise RuntimeError("chat is blocked")
         self.sent.append((chat_id, text, reply_markup))
         message = SimpleNamespace(message_id=self._next)
         self._next += 1
@@ -178,3 +181,69 @@ async def test_interrupted_notification(tmp_path):
     assert len(bot.sent) == 1
     assert "остановлена" in bot.sent[0][1].lower()
     assert "завершилась" not in bot.sent[0][1].lower()
+
+
+async def test_idle_after_execution_is_deduped(tmp_path):
+    clock = {"ms": 1_000}
+    session = _session("ses_1")
+    store, bot, _, notifier = await _setup(
+        tmp_path, [session], final_text="ок", clock=lambda: clock["ms"]
+    )
+    try:
+        await store.subscribe(1, "ses_1")
+        await notifier.on_event(_event("ses_1"))
+        clock["ms"] = 5_000
+        await notifier.on_event(_event("ses_1", "session.idle"))
+    finally:
+        await store.close()
+
+    assert len(bot.sent) == 1
+
+
+async def test_idle_after_dedup_window_notifies_again(tmp_path):
+    clock = {"ms": 1_000}
+    session = _session("ses_1")
+    store, bot, _, notifier = await _setup(
+        tmp_path, [session], final_text="ок", clock=lambda: clock["ms"]
+    )
+    try:
+        await store.subscribe(1, "ses_1")
+        await notifier.on_event(_event("ses_1"))
+        clock["ms"] = 30_000
+        await notifier.on_event(_event("ses_1", "session.idle"))
+    finally:
+        await store.close()
+
+    assert len(bot.sent) == 2
+
+
+async def test_idle_ignored_when_session_is_busy(tmp_path):
+    session = SessionInfo.model_validate(
+        {
+            "id": "ses_1",
+            "title": "Задача",
+            "time": {"created": 0, "updated": 0, "busy": 300, "idle": 100},
+        }
+    )
+    store, bot, _, notifier = await _setup(tmp_path, [session])
+    try:
+        await store.subscribe(1, "ses_1")
+        await notifier.on_event(_event("ses_1", "session.idle"))
+    finally:
+        await store.close()
+
+    assert bot.sent == []
+
+
+async def test_failed_recipient_does_not_block_others(tmp_path):
+    session = _session("ses_1")
+    store, bot, _, notifier = await _setup(tmp_path, [session], final_text="ок")
+    bot.fail_chats = {1}
+    try:
+        await store.subscribe(1, "ses_1")
+        await store.subscribe(2, "ses_1")
+        await notifier.on_event(_event("ses_1"))
+    finally:
+        await store.close()
+
+    assert [chat_id for chat_id, _, _ in bot.sent] == [2]

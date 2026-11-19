@@ -73,7 +73,7 @@ class OpencodeClient:
         except httpx.HTTPError as exc:
             raise OpencodeUnavailable(str(exc)) from exc
 
-        if response.status_code == 404:
+        if response.status_code == 404 and "/session/" in path:
             raise SessionNotFound(response.text[:500])
         if response.status_code >= 400:
             raise ApiError(response.status_code, response.text[:500])

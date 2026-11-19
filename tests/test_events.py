@@ -124,3 +124,25 @@ async def test_event_stream_continues_after_failure():
     events = [event async for event in stream.events()]
     assert [e.type for e in events] == ["second"]
     assert slept == [1.0]
+
+
+async def test_parse_sse_closes_source_when_closed():
+    closed = False
+
+    async def gen():
+        nonlocal closed
+        try:
+            yield 'data: {"type": "first", "data": {}}'
+            yield ""
+            yield 'data: {"type": "second", "data": {}}'
+            yield ""
+        finally:
+            closed = True
+
+    stream = parse_sse(gen())
+    first = await stream.__anext__()
+    assert first.type == "first"
+
+    await stream.aclose()
+
+    assert closed is True

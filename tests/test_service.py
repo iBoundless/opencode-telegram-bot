@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 
 from ocbot.config import Settings
@@ -88,6 +89,18 @@ async def test_ensure_running_skips_start_when_up():
     assert calls == []
 
 
+async def test_run_command_handles_missing_binary(monkeypatch):
+    async def boom(*args, **kwargs):
+        raise OSError("no such file")
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", boom)
+    controller = ServiceController(FakeClient(), _settings())
+
+    code, output = await controller._run_command("status")
+
+    assert (code, output) == (1, "")
+
+
 async def test_restart_polls_until_info_ok():
     clock = {"t": 0.0}
     client = FakeClient(failures=3)
@@ -171,15 +184,27 @@ async def test_restart_requires_confirmation():
 
     class FakeMessage:
         def __init__(self) -> None:
+            self.chat = SimpleNamespace(id=1)
+            self.message_id = 10
             self.edits: list[str] = []
 
-        async def edit_text(self, text, reply_markup=None):
+    class FakeBot:
+        def __init__(self) -> None:
+            self.edits: list[str] = []
+            self.sent: list[str] = []
+
+        async def edit_message_text(self, chat_id, message_id, text, reply_markup=None):
             self.edits.append(text)
+
+        async def send_message(self, chat_id, text, reply_markup=None):
+            self.sent.append(text)
+            return SimpleNamespace(message_id=11)
 
     class FakeCallback:
         def __init__(self, data: str) -> None:
             self.data = data
             self.message = FakeMessage()
+            self.bot = FakeBot()
             self.answers: list[str] = []
 
         async def answer(self, text=None, show_alert=False):
@@ -190,7 +215,7 @@ async def test_restart_requires_confirmation():
     await handlers.restart(callback, service)
 
     assert service.restarted is False
-    assert "Перезапустить" in callback.message.edits[0]
+    assert "Перезапустить" in callback.bot.edits[0]
 
     ok = FakeCallback("svc:restartok")
     await handlers.restart_now(ok, service)

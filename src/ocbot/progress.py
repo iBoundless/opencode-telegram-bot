@@ -95,7 +95,7 @@ class ProgressManager:
             if name:
                 state.tool = str(name)
             return
-        if event.type in ("session.tool.success", "session.tool.error"):
+        if event.type in ("session.tool.success", "session.tool.failed"):
             state.tool = ""
 
     async def _render(
@@ -112,7 +112,27 @@ class ProgressManager:
         for chat_id in sorted(chat_ids):
             current = state.chats.get(chat_id)
             if current is None:
-                sent = await bot_call(self.bot.send_message, chat_id, text)
+                existing = await self.store.progress_message(session_id, chat_id)
+                if existing is not None:
+                    try:
+                        await bot_call(
+                            self.bot.edit_message_text,
+                            chat_id=chat_id,
+                            message_id=existing,
+                            text=text,
+                        )
+                    except Exception:  # noqa: BLE001
+                        log.exception("failed to reuse progress message")
+                    state.chats[chat_id] = _ChatProgress(
+                        message_id=existing, last_edit_ms=clock_ms
+                    )
+                    continue
+
+                try:
+                    sent = await bot_call(self.bot.send_message, chat_id, text)
+                except Exception:  # noqa: BLE001
+                    log.exception("failed to send progress message")
+                    continue
                 state.chats[chat_id] = _ChatProgress(
                     message_id=sent.message_id, last_edit_ms=clock_ms
                 )

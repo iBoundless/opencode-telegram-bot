@@ -14,9 +14,13 @@ class FakeBot:
     def __init__(self) -> None:
         self.sent: list[tuple[int, str, object]] = []
         self.edits: list[tuple[int, int, str, object]] = []
+        self.fail_times = 0
         self._next = 1
 
     async def send_message(self, chat_id, text, reply_markup=None):
+        if self.fail_times:
+            self.fail_times -= 1
+            raise RuntimeError("telegram is down")
         self.sent.append((chat_id, text, reply_markup))
         message = SimpleNamespace(message_id=self._next)
         self._next += 1
@@ -187,3 +191,71 @@ async def test_reminder_not_early(tmp_path):
         assert not any("Напоминание" in text for _, text, _ in bot.sent)
     finally:
         await store.close()
+
+
+async def test_reminder_reattaches_decision_keyboard(tmp_path):
+    now = {"ms": 1_000_000}
+    store, bot, _, router = await _setup(tmp_path, clock=lambda: now["ms"])
+    try:
+        await store.set_permission_message(
+            "per_1", 1, 10, sent_at=now["ms"] - 6 * 60 * 1000, session_id="ses_1"
+        )
+        await router.remind_once()
+    finally:
+        await store.close()
+
+    reminders = [markup for _, text, markup in bot.sent if "Напоминание" in text]
+    assert len(reminders) == 1
+    callbacks = [
+        button.callback_data
+        for row in reminders[0].inline_keyboard
+        for button in row
+    ]
+    assert callbacks == ["perm:per_1:once", "perm:per_1:always", "perm:per_1:reject"]
+
+
+async def test_stale_permission_message_is_marked(tmp_path):
+    store, bot, client, router = await _setup(tmp_path, [_request()])
+    try:
+        await router.handle_requested()
+        client.requests = []
+        await router.handle_requested()
+        stored = await store.get_permission_message("per_1")
+    finally:
+        await store.close()
+
+    assert stored is None
+    assert bot.edits
+    assert "не актуален" in bot.edits[-1][2]
+    assert bot.edits[-1][1] == 1
+
+
+async def test_prompt_routed_to_session_subscriber(tmp_path):
+    store, bot, _, router = await _setup(tmp_path, [_request(session_id="ses_2")])
+    try:
+        await store.subscribe(7, "ses_2")
+        await router.handle_requested()
+    finally:
+        await store.close()
+
+    assert [chat_id for chat_id, _, _ in bot.sent] == [7]
+
+
+async def test_one_failed_send_does_not_block_rest(tmp_path):
+    store, bot, _client, router = await _setup(
+        tmp_path, [_request("per_1"), _request("per_2")]
+    )
+    bot.fail_times = 1
+    try:
+        delivered = await router.handle_requested()
+        first = await store.get_permission_message("per_1")
+        second = await store.get_permission_message("per_2")
+    finally:
+        await store.close()
+
+    assert delivered == ["per_2"]
+    assert first is None
+    assert second is not None
+    assert second.session_id == "ses_1"
+    assert len(bot.sent) == 1
+    assert "shell" in bot.sent[0][1]

@@ -33,31 +33,37 @@ async def parse_sse(lines: AsyncIterator[str]) -> AsyncIterator[Event]:
     data_lines: list[str] = []
     event_id: str | None = None
 
-    async for raw in lines:
-        line = raw.rstrip("\r")
-        if not line:
-            if data_lines:
-                event = _build_event(event_id, "\n".join(data_lines))
-                if event is not None:
-                    yield event
-            data_lines = []
-            event_id = None
-            continue
-        if line.startswith(":"):
-            continue
-        if line.startswith("data:"):
-            data_lines.append(line[5:].lstrip(" "))
-            continue
-        if line.startswith("id:"):
-            event_id = line[3:].strip()
-            continue
-        if line.startswith("event:"):
-            continue
+    try:
+        async for raw in lines:
+            line = raw.rstrip("\r")
+            if not line:
+                if data_lines:
+                    event = _build_event(event_id, "\n".join(data_lines))
+                    if event is not None:
+                        yield event
+                data_lines = []
+                event_id = None
+                continue
+            if line.startswith(":"):
+                continue
+            if line.startswith("data:"):
+                data_lines.append(line[5:].lstrip(" "))
+                continue
+            if line.startswith("id:"):
+                event_id = line[3:].strip()
+                continue
+            if line.startswith("event:"):
+                continue
 
-    if data_lines:
-        event = _build_event(event_id, "\n".join(data_lines))
-        if event is not None:
-            yield event
+        if data_lines:
+            event = _build_event(event_id, "\n".join(data_lines))
+            if event is not None:
+                yield event
+    finally:
+        close = getattr(lines, "aclose", None)
+        if close is not None:
+            with contextlib.suppress(Exception):
+                await close()
 
 
 def _build_event(event_id: str | None, payload: str) -> Event | None:

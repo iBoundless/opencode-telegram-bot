@@ -50,49 +50,51 @@ class Notifier:
         self._folded: set[str] = set()
         self._finished_at: dict[str, int] = {}
 
-    async def on_event(self, event: Event) -> None:
+    async def on_event(self, event: Event) -> bool:
+        """Handle an event and report whether it really finished the session."""
         session_id = event.data.get("sessionID")
         if not session_id:
-            return
+            return False
 
         if event.type in START_TYPES:
             self._started.setdefault(session_id, self._now())
             self._folded.discard(session_id)
             self._finished_at.pop(session_id, None)
-            return
+            return False
 
         if event.type not in FINISH_TYPES:
-            return
+            return False
 
         now = self._now()
         if event.type == "session.idle":
             last = self._finished_at.get(session_id)
             if last is not None and now - last < IDLE_DEDUP_MS:
-                return
+                return False
         self._finished_at[session_id] = now
 
         try:
             session = await self.client.get_session(session_id)
         except Exception:  # noqa: BLE001
             log.exception("failed to load finished session %s", session_id)
-            return
+            return False
 
         if event.type == "session.idle" and session.time.is_busy():
             # A new execution already started, so this idle signal is stale.
-            return
+            return False
 
         started = self._started.pop(session_id, None)
         duration_ms = now - started if started is not None else _busy_duration(session)
 
         if event.type == "session.execution.interrupted":
             await self.notify_interrupted(session, duration_ms)
-            return
+            return True
 
         if session.parent_id:
             await self._fold(session)
-            return
+            return True
 
         await self.notify_completion(session, duration_ms=duration_ms)
+        return True
 
     async def notify_completion(
         self,

@@ -154,10 +154,22 @@ class App:
             await self.notifier.on_event(event)
 
         if event.type in FINISH_TYPES:
-            if session_id and self.progress is not None:
+            if (
+                event.type != "session.idle"
+                and session_id
+                and self.progress is not None
+            ):
                 await self.progress.on_finished(str(session_id))
+            finished = True
             if self.notifier is not None:
-                await self.notifier.on_event(event)
+                finished = await self.notifier.on_event(event)
+            if (
+                event.type == "session.idle"
+                and session_id
+                and self.progress is not None
+                and finished
+            ):
+                await self.progress.on_finished(str(session_id))
             return
 
         if self.progress is not None:

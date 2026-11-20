@@ -234,11 +234,13 @@ class FakeProgress:
 
 
 class FakeNotifier:
-    def __init__(self) -> None:
+    def __init__(self, result: bool = True) -> None:
         self.events: list[str] = []
+        self.result = result
 
     async def on_event(self, event):
         self.events.append(event.type)
+        return self.result
 
 
 async def test_interrupted_event_cleans_progress_and_notifies(tmp_path):
@@ -332,3 +334,19 @@ async def test_idle_event_finishes_progress_and_notifies(tmp_path):
 
     assert progress.finished == ["ses_1"]
     assert notifier.events == ["session.idle"]
+
+
+async def test_duplicate_idle_keeps_progress_message(tmp_path):
+    progress = FakeProgress()
+    notifier = FakeNotifier(result=False)
+    app = _app(tmp_path, progress=progress, notifier=notifier)
+    try:
+        await app.store.init()
+        await app.handle_event(
+            Event(id=None, type="session.idle", data={"sessionID": "ses_1"})
+        )
+    finally:
+        await app.store.close()
+
+    assert notifier.events == ["session.idle"]
+    assert progress.finished == []

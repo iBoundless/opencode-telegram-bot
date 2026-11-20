@@ -26,7 +26,7 @@
 ## Установка
 
 ```bash
-cd /opt/opencode-telegram-bot
+cd opencode-telegram-bot
 uv sync
 ```
 
@@ -34,8 +34,8 @@ uv sync
 
 ```bash
 install -m 600 -o "$USER" -g "$USER" \
-  /opt/opencode-telegram-bot/.env.example \
-  /home/user/.config/opencode/telegram-bot.env
+  .env.example \
+  "$HOME/.config/opencode/telegram-bot.env"
 ```
 
 Откройте файл и заполните:
@@ -53,8 +53,8 @@ ALLOWED_USER_IDS=123456789
 Вручную (для отладки):
 
 ```bash
-cd /opt/opencode-telegram-bot
-set -a; . /home/user/.config/opencode/telegram-bot.env; set +a
+cd opencode-telegram-bot
+set -a; . "$HOME/.config/opencode/telegram-bot.env"; set +a
 uv run python -m ocbot.main
 ```
 
@@ -68,7 +68,11 @@ systemctl --user enable --now opencode-telegram-bot
 systemctl --user status opencode-telegram-bot
 ```
 
-Linger уже включен, поэтому служба работает без активного входа.
+Linger включается один раз, чтобы служба работала без активного входа:
+
+```bash
+loginctl enable-linger "$USER"
+```
 
 ## Команды бота
 
@@ -106,7 +110,20 @@ systemctl --user restart opencode-telegram-bot
 ## Еще один пользователь
 
 Добавьте его id в `ALLOWED_USER_IDS` через запятую и перезапустите службу.
-Запросы прав при этом приходят только первому id в списке.
+Запросы прав приходят в чат, подписанный на сессию; если подписчиков нет -
+первому id из списка.
+
+## Long polling и webhook
+
+Бот получает обновления через long polling. Если у токена уже настроен
+webhook (например, интеграцией Albato), Telegram вернет `409 Conflict`.
+Удалите webhook перед запуском:
+
+```bash
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/deleteWebhook"
+```
+
+Не устанавливайте webhook на этот токен, пока панель работает.
 
 ## Проверка
 

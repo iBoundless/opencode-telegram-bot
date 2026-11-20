@@ -5,6 +5,7 @@ from .permissions import router as permissions_router
 from .prompts import router as prompts_router
 from .service import router as service_router
 from .sessions import router as sessions_router
+from .voice import router as voice_router
 
 __all__ = [
     "menu_router",
@@ -14,4 +15,5 @@ __all__ = [
     "prompts_router",
     "service_router",
     "sessions_router",
+    "voice_router",
 ]

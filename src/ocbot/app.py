@@ -23,6 +23,7 @@ from .handlers import (
     prompts_router,
     service_router,
     sessions_router,
+    voice_router,
 )
 from .notifications import FINISH_TYPES, START_TYPES, Notifier
 from .opencode.client import OpencodeClient
@@ -31,6 +32,7 @@ from .opencode.service import ServiceController
 from .permissions import PermissionRouter
 from .progress import ProgressManager
 from .store import Store
+from .transcription import FasterWhisperTranscriber
 
 log = logging.getLogger(__name__)
 
@@ -262,17 +264,25 @@ def build_app(settings: Settings) -> App:
     permissions = PermissionRouter(client, store, bot, settings)
     progress = ProgressManager(client, store, bot, settings)
     notifier = Notifier(client, store, bot, settings)
+    transcriber = FasterWhisperTranscriber(
+        settings.stt_model,
+        settings.stt_language,
+        settings.stt_compute_type,
+        settings.stt_model_dir,
+    )
 
     ctx = BotContext(client=client, store=store, settings=settings)
     dispatcher["ctx"] = ctx
     dispatcher["perms"] = permissions
     dispatcher["service"] = service
+    dispatcher["transcriber"] = transcriber
     dispatcher.errors.register(handle_error)
 
     for router in (
         menu_router,
         sessions_router,
         new_task_router,
+        voice_router,
         models_router,
         prompts_router,
         permissions_router,

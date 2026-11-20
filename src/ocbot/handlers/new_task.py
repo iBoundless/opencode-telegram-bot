@@ -107,7 +107,7 @@ async def ask_path(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
 
 
-@router.message(NewTask.waiting_path)
+@router.message(NewTask.waiting_path, F.text)
 async def take_path(message: Message, ctx: BotContext, state: FSMContext) -> None:
     raw = (message.text or "").strip()
     if not raw.startswith("/"):
@@ -187,9 +187,14 @@ async def pick_model(callback: CallbackQuery, ctx: BotContext, state: FSMContext
     await callback.answer()
 
 
-@router.message(NewTask.waiting_prompt)
+@router.message(NewTask.waiting_prompt, F.text)
 async def create_task(message: Message, ctx: BotContext, state: FSMContext) -> None:
-    text = (message.text or "").strip()
+    await create_task_from_text(message, ctx, state, (message.text or "").strip())
+
+
+async def create_task_from_text(
+    message: Message, ctx: BotContext, state: FSMContext, text: str
+) -> None:
     if not text:
         await message.answer("Нужен текст задачи.")
         return

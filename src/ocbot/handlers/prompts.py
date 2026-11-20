@@ -59,6 +59,13 @@ async def route_text(message: Message, ctx: BotContext, state: FSMContext) -> No
     if not text:
         return
 
+    await send_text_to_active(message, ctx, state, text)
+
+
+async def send_text_to_active(
+    message: Message, ctx: BotContext, state: FSMContext, text: str
+) -> None:
+    """Send ready text to the chat's active session, offering queue/steer when busy."""
     try:
         result = await attempt_prompt(ctx.client, ctx.store, message.chat.id, text)
     except OpencodeUnavailable:

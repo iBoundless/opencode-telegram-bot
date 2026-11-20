@@ -160,3 +160,18 @@ async def test_cancel_keeps_other_drafts(tmp_path):
 
     assert list(remaining) == [second]
     assert remaining[second]["text"] == "второй"
+
+
+async def test_send_text_to_active_without_session_asks_to_open(tmp_path):
+    store = Store(tmp_path / "bot.db")
+    await store.init()
+    ctx = BotContext(
+        client=FakeClient(busy=False), store=store, settings=SimpleNamespace()
+    )
+    message = FakeMessage("привет")
+    try:
+        await prompts.send_text_to_active(message, ctx, _state(), "привет")
+    finally:
+        await store.close()
+
+    assert "Нет активной сессии" in message.answers[0][0]

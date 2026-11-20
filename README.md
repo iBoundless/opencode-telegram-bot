@@ -70,6 +70,10 @@ systemctl --user enable --now opencode-telegram-bot
 systemctl --user status opencode-telegram-bot
 ```
 
+Юнит рассчитан на установку в `/opt/opencode-telegram-bot`. Если проект лежит
+в другом каталоге, поправь `WorkingDirectory` и `ExecStart` в скопированном
+файле.
+
 Linger включается один раз, чтобы служба работала без активного входа:
 
 ```bash
@@ -97,14 +101,15 @@ loginctl enable-linger "$USER"
 - Распознавание идет на CPU, поэтому 30-секундное голосовое обрабатывается
   несколько секунд. Первое голосовое дольше: скачивается модель.
 
-Модель и кэш лежат в `.models` в корне проекта (диск `/srv`, не домашний
-каталог). Настройки в env-файле:
+Модель и кэш по умолчанию лежат в `.models` в корне проекта. Если проект
+установлен в другое место или диск ограничен, укажи отдельный каталог с
+запасом места. Настройки в env-файле:
 
 ```ini
 STT_MODEL=small
 STT_LANGUAGE=ru
 STT_COMPUTE_TYPE=int8
-STT_MODEL_DIR=/opt/opencode-telegram-bot/.models
+STT_MODEL_DIR=/var/lib/opencode-telegram-bot/models
 STT_MAX_SECONDS=300
 ```
 
@@ -158,7 +163,7 @@ systemctl --user restart opencode-telegram-bot
 ## Long polling и webhook
 
 Бот получает обновления через long polling. Если у токена уже настроен
-webhook (например, интеграцией Albato), Telegram вернет `409 Conflict`.
+webhook (например, внешней интеграцией), Telegram вернет `409 Conflict`.
 Удалите webhook перед запуском:
 
 ```bash

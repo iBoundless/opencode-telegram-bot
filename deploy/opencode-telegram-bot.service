@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/opencode-telegram-bot
-EnvironmentFile=/home/user/.config/opencode/telegram-bot.env
+EnvironmentFile=%h/.config/opencode/telegram-bot.env
 ExecStart=/opt/opencode-telegram-bot/.venv/bin/python -m ocbot.main
 Restart=always
 RestartSec=5

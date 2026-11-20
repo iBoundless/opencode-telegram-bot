@@ -31,7 +31,7 @@ def path_prompt():
     return (
         "Новая задача. Шаг 1 из 3: проект.\n"
         "\n"
-        "Отправь абсолютный путь к папке, например /home/user/projects/my-app.",
+        "Отправь абсолютный путь к папке, например /path/to/project.",
         back_to_menu(),
     )
 

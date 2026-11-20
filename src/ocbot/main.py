@@ -14,8 +14,8 @@ def main() -> None:
         settings = Settings.from_env()
     except Exception as exc:  # noqa: BLE001
         raise SystemExit(
-            "Не удалось прочитать настройки. Проверь "
-            "/home/user/.config/opencode/telegram-bot.env: "
+            "Не удалось прочитать настройки. Проверь env-файл бота "
+            "(см. README): "
             f"{exc}"
         ) from exc
     configure_logging(settings)

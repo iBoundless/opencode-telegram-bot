@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
     "faster-whisper>=1.1",
+    "av<19",
 ]
 
 [dependency-groups]

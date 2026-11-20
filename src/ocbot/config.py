@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 
 DEFAULT_SERVICE_JSON = Path.home() / ".config" / "opencode" / "service.json"
 DEFAULT_DB_PATH = Path.home() / ".local" / "share" / "opencode-telegram-bot" / "bot.db"
+DEFAULT_STT_MODEL_DIR = Path(__file__).resolve().parents[2] / ".models"
 
 
 def _default_bin() -> str:
@@ -40,6 +41,11 @@ class Settings(BaseModel):
     log_level: str = "INFO"
     permission_reminder_minutes: int = 5
     progress_edit_seconds: float = 2.0
+    stt_model: str = "small"
+    stt_language: str = "ru"
+    stt_compute_type: str = "int8"
+    stt_model_dir: Path = DEFAULT_STT_MODEL_DIR
+    stt_max_seconds: int = 300
 
     @field_validator("allowed_user_ids", mode="before")
     @classmethod
@@ -69,5 +75,12 @@ class Settings(BaseModel):
                 "progress_edit_seconds": float(
                     os.environ.get("PROGRESS_EDIT_SECONDS", "2.0")
                 ),
+                "stt_model": os.environ.get("STT_MODEL", "small"),
+                "stt_language": os.environ.get("STT_LANGUAGE", "ru"),
+                "stt_compute_type": os.environ.get("STT_COMPUTE_TYPE", "int8"),
+                "stt_model_dir": os.environ.get(
+                    "STT_MODEL_DIR", str(DEFAULT_STT_MODEL_DIR)
+                ),
+                "stt_max_seconds": int(os.environ.get("STT_MAX_SECONDS", "300")),
             }
         )

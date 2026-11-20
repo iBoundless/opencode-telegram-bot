@@ -21,6 +21,11 @@ def _clear_env(monkeypatch):
         "OCBOT_LOG_LEVEL",
         "PERMISSION_REMINDER_MINUTES",
         "PROGRESS_EDIT_SECONDS",
+        "STT_MODEL",
+        "STT_LANGUAGE",
+        "STT_COMPUTE_TYPE",
+        "STT_MODEL_DIR",
+        "STT_MAX_SECONDS",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -79,3 +84,32 @@ def test_settings_rejects_empty_token(monkeypatch):
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "")
     with pytest.raises(ValidationError):
         Settings.from_env()
+
+
+def test_settings_stt_defaults(monkeypatch):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "1:x")
+    monkeypatch.setenv("ALLOWED_USER_IDS", "11")
+    s = Settings.from_env()
+    assert s.stt_model == "small"
+    assert s.stt_language == "ru"
+    assert s.stt_compute_type == "int8"
+    assert s.stt_max_seconds == 300
+    assert s.stt_model_dir.name == ".models"
+
+
+def test_settings_stt_overrides(tmp_path, monkeypatch):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "1:x")
+    monkeypatch.setenv("ALLOWED_USER_IDS", "11")
+    monkeypatch.setenv("STT_MODEL", "medium")
+    monkeypatch.setenv("STT_LANGUAGE", "en")
+    monkeypatch.setenv("STT_COMPUTE_TYPE", "float32")
+    monkeypatch.setenv("STT_MODEL_DIR", str(tmp_path / "models"))
+    monkeypatch.setenv("STT_MAX_SECONDS", "120")
+    s = Settings.from_env()
+    assert s.stt_model == "medium"
+    assert s.stt_language == "en"
+    assert s.stt_compute_type == "float32"
+    assert s.stt_model_dir == tmp_path / "models"
+    assert s.stt_max_seconds == 120

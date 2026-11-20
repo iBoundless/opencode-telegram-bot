@@ -8,6 +8,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from ocbot.config import Settings
 from ocbot.context import BotContext
+from ocbot.formatting import utf16_len
 from ocbot.handlers import voice
 from ocbot.handlers.new_task import NewTask
 from ocbot.opencode.models import SessionInfo
@@ -31,11 +32,12 @@ class FakeBot:
 
 
 class FakeMessage:
-    def __init__(self, voice, bot) -> None:
+    def __init__(self, voice, bot, *, fail_edit: bool = False) -> None:
         self.voice = voice
         self.bot = bot
         self.chat = SimpleNamespace(id=1)
         self.text = None
+        self.fail_edit = fail_edit
         self.answers: list[tuple[str, object]] = []
         self.edits: list[tuple[str, object]] = []
 
@@ -43,6 +45,8 @@ class FakeMessage:
         self.answers.append((text, reply_markup))
 
         async def edit_text(inner, reply_markup=None):
+            if self.fail_edit:
+                raise RuntimeError("message cannot be edited")
             self.edits.append((inner, reply_markup))
 
         return SimpleNamespace(edit_text=edit_text)
@@ -177,7 +181,8 @@ async def test_waiting_path_rejects_voice_and_keeps_state(tmp_path):
     store, client, ctx, transcriber = await _setup(tmp_path)
     state = _state()
     await state.set_state(NewTask.waiting_path)
-    message = FakeMessage(_voice(), FakeBot())
+    bot = FakeBot()
+    message = FakeMessage(_voice(), bot)
     try:
         await voice.handle_voice(message, ctx, state, transcriber)
         current = await state.get_state()
@@ -186,8 +191,55 @@ async def test_waiting_path_rejects_voice_and_keeps_state(tmp_path):
 
     assert client.created == []
     assert client.prompts == []
+    assert bot.downloads == []
+    assert transcriber.calls == []
     assert current == NewTask.waiting_path.state
     assert any("Голосом" in text for text, _ in message.answers)
+
+
+async def test_choosing_model_rejects_voice_before_download(tmp_path):
+    store, client, ctx, transcriber = await _setup(tmp_path)
+    state = _state()
+    await state.set_state(NewTask.choosing_model)
+    bot = FakeBot()
+    message = FakeMessage(_voice(), bot)
+    try:
+        await voice.handle_voice(message, ctx, state, transcriber)
+        current = await state.get_state()
+    finally:
+        await store.close()
+
+    assert bot.downloads == []
+    assert transcriber.calls == []
+    assert current == NewTask.choosing_model.state
+    assert any("Голосом" in text for text, _ in message.answers)
+
+
+async def test_echo_failure_does_not_drop_transcript(tmp_path):
+    store, client, ctx, transcriber = await _setup(tmp_path)
+    message = FakeMessage(_voice(), FakeBot(), fail_edit=True)
+    try:
+        await voice.handle_voice(message, ctx, _state(), transcriber)
+    finally:
+        await store.close()
+
+    assert client.prompts == [("ses_1", "сделай отчет", "queue")]
+    assert any("Отправлено" in text for text, _ in message.answers)
+
+
+async def test_long_transcript_is_truncated_only_in_echo(tmp_path):
+    text = "я" * 5000
+    store, client, ctx, transcriber = await _setup(tmp_path, text=text)
+    message = FakeMessage(_voice(), FakeBot())
+    try:
+        await voice.handle_voice(message, ctx, _state(), transcriber)
+    finally:
+        await store.close()
+
+    assert client.prompts == [("ses_1", text, "queue")]
+    echo = next(item for item, _ in message.edits if item.startswith("🎤"))
+    assert utf16_len(echo) <= 4096
+    assert "…" in echo
 
 
 async def test_empty_transcript_does_not_send_prompt(tmp_path):

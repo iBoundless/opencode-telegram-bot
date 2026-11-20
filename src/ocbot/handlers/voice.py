@@ -8,6 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from ..context import BotContext
+from ..formatting import split_message
 from ..telegram_helpers import bot_call
 from ..transcription import Transcriber, TranscriptionError
 from .new_task import NewTask, create_task_from_text
@@ -18,6 +19,7 @@ log = logging.getLogger(__name__)
 router = Router(name="voice")
 
 MAX_VOICE_BYTES = 20 * 1024 * 1024
+ECHO_LIMIT = 3500
 
 
 @router.message(F.voice)
@@ -46,6 +48,13 @@ async def handle_voice(
         )
         return
 
+    current = await state.get_state()
+    if current is not None and current != NewTask.waiting_prompt.state:
+        await message.answer(
+            "Голосом можно надиктовать задачу. Путь и выбор кнопок - вручную."
+        )
+        return
+
     status = await message.answer("🎤 Распознаю...")
     buffer = io.BytesIO()
     try:
@@ -68,7 +77,15 @@ async def handle_voice(
         await bot_call(status.edit_text, "🎤 Не расслышал. Повтори, пожалуйста.")
         return
 
-    await bot_call(status.edit_text, f"🎤 {text}")
+    chunks = split_message(text, limit=ECHO_LIMIT)
+    echo = chunks[0] if chunks else text
+    if len(chunks) > 1:
+        echo += "\n…"
+    try:
+        await bot_call(status.edit_text, f"🎤 {echo}")
+    except Exception:  # noqa: BLE001
+        # A failed echo must not throw away a successfully transcribed prompt.
+        log.warning("could not echo transcript", exc_info=True)
 
     current = await state.get_state()
     if current == NewTask.waiting_prompt.state:
